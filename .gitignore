@@ -1,0 +1,15 @@
+node_modules/
+build/
+dist/
+coverage/
+backups/
+data/
+logs/
+sqlite.zip
+sqlite/
+tools/
+.ssh-github-studio-aruo*
+.DS_Store
+*.log
+.env*
+!.env.example

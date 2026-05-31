@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-serif: Georgia, serif;
+  
+  --color-bg-dark: #08080C;
+  --color-accent-blue: #4D7FFF;
+  --color-accent-orange: #FF6B4A;
+  --color-glass: rgba(255, 255, 255, 0.05);
+  --color-glass-border: rgba(255, 255, 255, 0.1);
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #9FA2B4;
+  --color-status-green: #47D16E;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-bg-dark);
+  color: var(--color-text-primary);
+  overflow-x: hidden;
+}
+
+/* Fluid Background Blobs */
+.fluid-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  overflow: hidden;
+  background-color: var(--color-bg-dark);
+}
+
+.fluid-bg::before, .fluid-bg::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.4;
+  animation: float 20s infinite alternate ease-in-out;
+}
+
+.fluid-bg::before {
+  width: 400px;
+  height: 400px;
+  background: linear-gradient(135deg, #FF6B4A, #9E49FF);
+  top: -100px;
+  right: -100px;
+}
+
+.fluid-bg::after {
+  width: 350px;
+  height: 350px;
+  background: linear-gradient(135deg, #4D7FFF, #17D9FF);
+  bottom: -50px;
+  left: -50px;
+  animation-delay: -10s;
+}
+
+@keyframes float {
+  0% { transform: scale(1) translate(0, 0); }
+  50% { transform: scale(1.1) translate(2%, 2%); }
+  100% { transform: scale(1) translate(-2%, -2%); }
+}
+
+/* Scrollbar hiding */
+::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}
