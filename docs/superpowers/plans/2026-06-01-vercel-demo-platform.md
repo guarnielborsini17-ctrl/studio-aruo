@@ -77,10 +77,7 @@ Create `vercel.json`:
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "framework": "vite",
-  "rewrites": [
-    { "source": "/((?!api(?:/|$)).*)", "destination": "/" }
-  ]
+  "framework": "vite"
 }
 ```
 
