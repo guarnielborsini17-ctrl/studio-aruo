@@ -79,8 +79,7 @@ Create `vercel.json`:
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/(.*)", "destination": "/" }
+    { "source": "/((?!api/.*).*)", "destination": "/" }
   ]
 }
 ```
