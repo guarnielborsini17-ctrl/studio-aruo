@@ -9,6 +9,7 @@ sqlite.zip
 sqlite/
 tools/
 .ssh-github-studio-aruo*
+.superpowers/
 .DS_Store
 *.log
 .env*
