@@ -1,0 +1,140 @@
+import { neon } from '@neondatabase/serverless';
+
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL is required');
+}
+
+export const sql = neon(process.env.DATABASE_URL);
+
+export async function setupSchema() {
+  await sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS users (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      username TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      role TEXT NOT NULL CHECK (role IN ('designer', 'artist')),
+      display_name TEXT NOT NULL,
+      avatar_url TEXT NOT NULL DEFAULT '',
+      bio TEXT NOT NULL DEFAULT '',
+      balance INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS works (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      description TEXT NOT NULL DEFAULT '',
+      image_url TEXT NOT NULL,
+      image_path TEXT NOT NULL DEFAULT '',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS pricing_items (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      artist_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      description TEXT NOT NULL DEFAULT '',
+      price INTEGER NOT NULL,
+      unit TEXT NOT NULL DEFAULT 'item',
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS collaborations (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      designer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      artist_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'completed')),
+      title TEXT NOT NULL,
+      note TEXT NOT NULL DEFAULT '',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS reviews (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      collaboration_id UUID NOT NULL UNIQUE REFERENCES collaborations(id) ON DELETE CASCADE,
+      designer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      artist_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+      content TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS chicken_legs (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      collaboration_id UUID NOT NULL REFERENCES collaborations(id) ON DELETE CASCADE,
+      designer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      artist_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      amount INTEGER NOT NULL CHECK (amount > 0),
+      message TEXT NOT NULL DEFAULT '',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `;
+}
+
+type UserRow = {
+  id: string;
+  username: string;
+  role: 'designer' | 'artist';
+  display_name: string;
+  avatar_url?: string | null;
+  bio?: string | null;
+  balance?: number | string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+type WorkRow = {
+  id: string;
+  user_id: string;
+  title: string;
+  description?: string | null;
+  image_url: string;
+  image_path?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export function mapUser(row: UserRow) {
+  return {
+    id: row.id,
+    username: row.username,
+    role: row.role,
+    displayName: row.display_name,
+    avatarUrl: row.avatar_url || '',
+    bio: row.bio || '',
+    balance: Number(row.balance || 0),
+    createdAt: row.created_at || '',
+    updatedAt: row.updated_at || '',
+  };
+}
+
+export function mapWork(row: WorkRow) {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    title: row.title,
+    description: row.description || '',
+    imageUrl: row.image_url,
+    imagePath: row.image_path || '',
+    createdAt: row.created_at || '',
+    updatedAt: row.updated_at || '',
+  };
+}
