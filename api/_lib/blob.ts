@@ -8,10 +8,10 @@ function isAllowedImagePath(pathname: string) {
   return IMAGE_EXTENSIONS.some((ext) => lower.endsWith(ext));
 }
 
-export async function createBlobUploadResponse(body: HandleUploadBody, userId: string) {
+export async function createBlobUploadResponse(body: HandleUploadBody, userId: string, request: Request) {
   return handleUpload({
     body,
-    request: new Request('http://localhost/api/blob/upload-token', { method: 'POST' }),
+    request,
     onBeforeGenerateToken: async (pathname) => {
       if (!isAllowedImagePath(pathname)) {
         throw new Error('Only image uploads are allowed');

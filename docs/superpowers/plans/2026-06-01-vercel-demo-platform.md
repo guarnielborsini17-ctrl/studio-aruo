@@ -137,8 +137,21 @@ export function methodNotAllowed(res: VercelResponse, allowed: string[]) {
   sendJson(res, 405, { error: 'method_not_allowed' });
 }
 
+export function applyCors(res: VercelResponse, allowed: string[]) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Methods', [...new Set([...allowed.map((method) => method.toUpperCase()), 'OPTIONS'])].join(', '));
+}
+
 export function requireMethod(req: VercelRequest, res: VercelResponse, allowed: string[]) {
-  if (!req.method || !allowed.includes(req.method)) {
+  const method = req.method?.toUpperCase();
+  if (method === 'OPTIONS') {
+    applyCors(res, allowed);
+    res.setHeader('Allow', [...new Set([...allowed.map((method) => method.toUpperCase()), 'OPTIONS'])].join(', '));
+    res.status(204).end();
+    return false;
+  }
+  if (!method || !allowed.includes(method)) {
     methodNotAllowed(res, allowed);
     return false;
   }
@@ -384,10 +397,10 @@ Create `api/_lib/blob.ts`:
 ```ts
 import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 
-export async function createBlobUploadResponse(body: HandleUploadBody, userId: string) {
+export async function createBlobUploadResponse(body: HandleUploadBody, userId: string, request: Request) {
   return handleUpload({
     body,
-    request: new Request('https://studio-aruo.local/api/blob/upload-token'),
+    request,
     onBeforeGenerateToken: async (pathname) => {
       const lower = pathname.toLowerCase();
       if (!lower.endsWith('.png') && !lower.endsWith('.jpg') && !lower.endsWith('.jpeg') && !lower.endsWith('.webp')) {
@@ -595,7 +608,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!requireMethod(req, res, ['POST'])) return;
   const user = await requireUser(req, res);
   if (!user) return;
-  const result = await createBlobUploadResponse(req.body, user.id);
+  const result = await createBlobUploadResponse(req.body, user.id, req);
   sendJson(res, 200, result);
 }
 ```
