@@ -139,7 +139,7 @@ export function methodNotAllowed(res: VercelResponse, allowed: string[]) {
 
 export function applyCors(res: VercelResponse, allowed: string[]) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Setup-Secret');
   res.setHeader('Access-Control-Allow-Methods', [...new Set([...allowed.map((method) => method.toUpperCase()), 'OPTIONS'])].join(', '));
 }
 
@@ -204,6 +204,7 @@ export type SessionUser = {
 };
 
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 14;
+export const MAX_PASSWORD_LENGTH = 128;
 
 function secret() {
   const value = process.env.SESSION_SECRET;
@@ -219,13 +220,26 @@ function sign(payload: string) {
   return crypto.createHmac('sha256', secret()).update(payload).digest('base64url');
 }
 
-export function hashPassword(password: string) {
+function assertPassword(password: unknown): asserts password is string {
+  if (typeof password !== 'string') {
+    throw new TypeError('password must be a string');
+  }
+  if (password.length > MAX_PASSWORD_LENGTH) {
+    throw new RangeError('password exceeds maximum length');
+  }
+}
+
+export function hashPassword(password: unknown) {
+  assertPassword(password);
   const salt = crypto.randomBytes(16).toString('base64url');
   const derived = crypto.scryptSync(password, salt, 64).toString('base64url');
   return `scrypt:${salt}:${derived}`;
 }
 
-export function verifyPassword(password: string, stored: string) {
+export function verifyPassword(password: unknown, stored: string) {
+  if (typeof password !== 'string' || password.length > MAX_PASSWORD_LENGTH) {
+    return false;
+  }
   const [scheme, salt, derived] = stored.split(':');
   if (scheme !== 'scrypt' || !salt || !derived) return false;
   const next = crypto.scryptSync(password, salt, 64).toString('base64url');
@@ -340,6 +354,16 @@ export async function setupSchema() {
   `;
 
   await sql`
+    DO $$
+    BEGIN
+      ALTER TABLE collaborations
+        ADD CONSTRAINT collaborations_id_designer_artist_key UNIQUE (id, designer_id, artist_id);
+    EXCEPTION
+      WHEN duplicate_object THEN NULL;
+    END $$;
+  `;
+
+  await sql`
     CREATE TABLE IF NOT EXISTS reviews (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       collaboration_id UUID NOT NULL UNIQUE REFERENCES collaborations(id) ON DELETE CASCADE,
@@ -352,6 +376,19 @@ export async function setupSchema() {
   `;
 
   await sql`
+    DO $$
+    BEGIN
+      ALTER TABLE reviews
+        ADD CONSTRAINT reviews_collaboration_scope_fkey
+        FOREIGN KEY (collaboration_id, designer_id, artist_id)
+        REFERENCES collaborations(id, designer_id, artist_id)
+        ON DELETE CASCADE;
+    EXCEPTION
+      WHEN duplicate_object THEN NULL;
+    END $$;
+  `;
+
+  await sql`
     CREATE TABLE IF NOT EXISTS chicken_legs (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       collaboration_id UUID NOT NULL REFERENCES collaborations(id) ON DELETE CASCADE,
@@ -361,6 +398,19 @@ export async function setupSchema() {
       message TEXT NOT NULL DEFAULT '',
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
+  `;
+
+  await sql`
+    DO $$
+    BEGIN
+      ALTER TABLE chicken_legs
+        ADD CONSTRAINT chicken_legs_collaboration_scope_fkey
+        FOREIGN KEY (collaboration_id, designer_id, artist_id)
+        REFERENCES collaborations(id, designer_id, artist_id)
+        ON DELETE CASCADE;
+    EXCEPTION
+      WHEN duplicate_object THEN NULL;
+    END $$;
   `;
 }
 
@@ -476,7 +526,7 @@ Create `api/auth/register.ts`:
 
 ```ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createSessionToken, hashPassword, type UserRole } from '../_lib/auth';
+import { createSessionToken, hashPassword, MAX_PASSWORD_LENGTH, type UserRole } from '../_lib/auth';
 import { mapUser, sql } from '../_lib/db';
 import { rawStringValue, requireMethod, sendJson, textValue } from '../_lib/http';
 
@@ -489,7 +539,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const role = req.body?.role as UserRole;
 
   if (!username || username.length < 3) return sendJson(res, 400, { error: 'username_too_short' });
-  if (!password || password.length < 6) return sendJson(res, 400, { error: 'password_too_short' });
+  if (!password || password.length < 6 || password.length > MAX_PASSWORD_LENGTH) return sendJson(res, 400, { error: 'password_too_short' });
   if (role !== 'designer' && role !== 'artist') return sendJson(res, 400, { error: 'invalid_role' });
 
   try {
@@ -515,7 +565,7 @@ Create `api/auth/login.ts`:
 
 ```ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createSessionToken, verifyPassword } from '../_lib/auth';
+import { createSessionToken, MAX_PASSWORD_LENGTH, verifyPassword } from '../_lib/auth';
 import { mapUser, sql } from '../_lib/db';
 import { rawStringValue, requireMethod, sendJson, textValue } from '../_lib/http';
 
@@ -524,6 +574,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const username = textValue(req.body?.username).toLowerCase();
   const password = rawStringValue(req.body?.password);
+  if (!password || password.length > MAX_PASSWORD_LENGTH) {
+    sendJson(res, 401, { error: 'invalid_credentials' });
+    return;
+  }
   const rows = await sql`SELECT * FROM users WHERE username = ${username} LIMIT 1`;
   const row = rows[0];
 

@@ -65,6 +65,16 @@ export async function setupSchema() {
   `;
 
   await sql`
+    DO $$
+    BEGIN
+      ALTER TABLE collaborations
+        ADD CONSTRAINT collaborations_id_designer_artist_key UNIQUE (id, designer_id, artist_id);
+    EXCEPTION
+      WHEN duplicate_object THEN NULL;
+    END $$;
+  `;
+
+  await sql`
     CREATE TABLE IF NOT EXISTS reviews (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       collaboration_id UUID NOT NULL UNIQUE REFERENCES collaborations(id) ON DELETE CASCADE,
@@ -77,6 +87,19 @@ export async function setupSchema() {
   `;
 
   await sql`
+    DO $$
+    BEGIN
+      ALTER TABLE reviews
+        ADD CONSTRAINT reviews_collaboration_scope_fkey
+        FOREIGN KEY (collaboration_id, designer_id, artist_id)
+        REFERENCES collaborations(id, designer_id, artist_id)
+        ON DELETE CASCADE;
+    EXCEPTION
+      WHEN duplicate_object THEN NULL;
+    END $$;
+  `;
+
+  await sql`
     CREATE TABLE IF NOT EXISTS chicken_legs (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       collaboration_id UUID NOT NULL REFERENCES collaborations(id) ON DELETE CASCADE,
@@ -86,6 +109,19 @@ export async function setupSchema() {
       message TEXT NOT NULL DEFAULT '',
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
+  `;
+
+  await sql`
+    DO $$
+    BEGIN
+      ALTER TABLE chicken_legs
+        ADD CONSTRAINT chicken_legs_collaboration_scope_fkey
+        FOREIGN KEY (collaboration_id, designer_id, artist_id)
+        REFERENCES collaborations(id, designer_id, artist_id)
+        ON DELETE CASCADE;
+    EXCEPTION
+      WHEN duplicate_object THEN NULL;
+    END $$;
   `;
 }
 

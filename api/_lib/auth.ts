@@ -11,6 +11,7 @@ export type SessionUser = {
 };
 
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 14;
+export const MAX_PASSWORD_LENGTH = 128;
 
 function sessionSecret() {
   const value = process.env.SESSION_SECRET;
@@ -34,13 +35,26 @@ function safeEqual(left: string, right: string) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-export function hashPassword(password: string) {
+function assertPassword(password: unknown): asserts password is string {
+  if (typeof password !== 'string') {
+    throw new TypeError('password must be a string');
+  }
+  if (password.length > MAX_PASSWORD_LENGTH) {
+    throw new RangeError('password exceeds maximum length');
+  }
+}
+
+export function hashPassword(password: unknown) {
+  assertPassword(password);
   const salt = crypto.randomBytes(16).toString('base64url');
   const hash = crypto.scryptSync(password, salt, 64).toString('base64url');
   return `scrypt:${salt}:${hash}`;
 }
 
-export function verifyPassword(password: string, stored: string) {
+export function verifyPassword(password: unknown, stored: string) {
+  if (typeof password !== 'string' || password.length > MAX_PASSWORD_LENGTH) {
+    return false;
+  }
   const [scheme, salt, expected] = stored.split(':');
   if (scheme !== 'scrypt' || !salt || !expected) {
     return false;

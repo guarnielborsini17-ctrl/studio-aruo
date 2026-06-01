@@ -3,7 +3,7 @@ import { getUserFromRequest, type SessionUser, type UserRole } from './auth';
 
 export type ApiHandler = (req: VercelRequest, res: VercelResponse) => Promise<void> | void;
 
-const DEFAULT_CORS_HEADERS = 'Content-Type, Authorization';
+const DEFAULT_CORS_HEADERS = 'Content-Type, Authorization, X-Setup-Secret';
 
 function normalizeAllowedMethods(allowed: string[]) {
   return [...new Set([...allowed.map((method) => method.toUpperCase()), 'OPTIONS'])];
