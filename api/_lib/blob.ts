@@ -1,4 +1,5 @@
 import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
+import type { VercelRequest } from '@vercel/node';
 
 const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp'] as const;
 const IMAGE_CONTENT_TYPES = ['image/png', 'image/jpeg', 'image/webp'] as const;
@@ -8,7 +9,7 @@ function isAllowedImagePath(pathname: string) {
   return IMAGE_EXTENSIONS.some((ext) => lower.endsWith(ext));
 }
 
-export async function createBlobUploadResponse(body: HandleUploadBody, userId: string, request: Request) {
+export async function createBlobUploadResponse(body: HandleUploadBody, userId: string, request: VercelRequest) {
   return handleUpload({
     body,
     request,

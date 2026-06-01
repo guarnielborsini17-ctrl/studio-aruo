@@ -396,8 +396,9 @@ Create `api/_lib/blob.ts`:
 
 ```ts
 import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
+import type { VercelRequest } from '@vercel/node';
 
-export async function createBlobUploadResponse(body: HandleUploadBody, userId: string, request: Request) {
+export async function createBlobUploadResponse(body: HandleUploadBody, userId: string, request: VercelRequest) {
   return handleUpload({
     body,
     request,
