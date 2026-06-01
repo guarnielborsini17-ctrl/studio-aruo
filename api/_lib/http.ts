@@ -47,6 +47,10 @@ export function textValue(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+export function rawStringValue(value: unknown) {
+  return typeof value === 'string' ? value : '';
+}
+
 export async function requireUser(req: VercelRequest, res: VercelResponse): Promise<SessionUser | null> {
   const user = await getUserFromRequest(req);
   if (!user) {

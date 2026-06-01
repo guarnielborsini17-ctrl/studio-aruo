@@ -396,9 +396,12 @@ Create `api/_lib/blob.ts`:
 
 ```ts
 import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
+import type { IncomingMessage } from 'node:http';
 import type { VercelRequest } from '@vercel/node';
 
-export async function createBlobUploadResponse(body: HandleUploadBody, userId: string, request: VercelRequest) {
+const MAXIMUM_SIZE_IN_BYTES = 8 * 1024 * 1024;
+
+export async function createBlobUploadResponse(body: HandleUploadBody, userId: string, request: VercelRequest | IncomingMessage) {
   return handleUpload({
     body,
     request,
@@ -409,6 +412,7 @@ export async function createBlobUploadResponse(body: HandleUploadBody, userId: s
       }
       return {
         allowedContentTypes: ['image/png', 'image/jpeg', 'image/webp'],
+        maximumSizeInBytes: MAXIMUM_SIZE_IN_BYTES,
         tokenPayload: JSON.stringify({ userId }),
       };
     },
@@ -474,13 +478,13 @@ Create `api/auth/register.ts`:
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createSessionToken, hashPassword, type UserRole } from '../_lib/auth';
 import { mapUser, sql } from '../_lib/db';
-import { requireMethod, sendJson, textValue } from '../_lib/http';
+import { rawStringValue, requireMethod, sendJson, textValue } from '../_lib/http';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!requireMethod(req, res, ['POST'])) return;
 
   const username = textValue(req.body?.username).toLowerCase();
-  const password = textValue(req.body?.password);
+  const password = rawStringValue(req.body?.password);
   const displayName = textValue(req.body?.displayName) || username;
   const role = req.body?.role as UserRole;
 
@@ -513,13 +517,13 @@ Create `api/auth/login.ts`:
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createSessionToken, verifyPassword } from '../_lib/auth';
 import { mapUser, sql } from '../_lib/db';
-import { requireMethod, sendJson, textValue } from '../_lib/http';
+import { rawStringValue, requireMethod, sendJson, textValue } from '../_lib/http';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!requireMethod(req, res, ['POST'])) return;
 
   const username = textValue(req.body?.username).toLowerCase();
-  const password = textValue(req.body?.password);
+  const password = rawStringValue(req.body?.password);
   const rows = await sql`SELECT * FROM users WHERE username = ${username} LIMIT 1`;
   const row = rows[0];
 
