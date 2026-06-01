@@ -364,6 +364,54 @@ export async function setupSchema() {
   `;
 
   await sql`
+    CREATE OR REPLACE FUNCTION enforce_collaboration_role_invariant()
+    RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+    DECLARE
+      designer_role TEXT;
+      artist_role TEXT;
+    BEGIN
+      IF NEW.designer_id = NEW.artist_id THEN
+        RAISE EXCEPTION 'collaboration participants must be different users'
+          USING ERRCODE = '23514';
+      END IF;
+
+      SELECT role
+        INTO designer_role
+        FROM users
+        WHERE id = NEW.designer_id;
+
+      IF designer_role IS DISTINCT FROM 'designer' THEN
+        RAISE EXCEPTION 'collaboration designer must have role designer'
+          USING ERRCODE = '23514';
+      END IF;
+
+      SELECT role
+        INTO artist_role
+        FROM users
+        WHERE id = NEW.artist_id;
+
+      IF artist_role IS DISTINCT FROM 'artist' THEN
+        RAISE EXCEPTION 'collaboration artist must have role artist'
+          USING ERRCODE = '23514';
+      END IF;
+
+      RETURN NEW;
+    END;
+    $$;
+  `;
+
+  await sql`DROP TRIGGER IF EXISTS collaborations_role_invariant_trigger ON collaborations`;
+
+  await sql`
+    CREATE TRIGGER collaborations_role_invariant_trigger
+    BEFORE INSERT OR UPDATE ON collaborations
+    FOR EACH ROW
+    EXECUTE FUNCTION enforce_collaboration_role_invariant()
+  `;
+
+  await sql`
     CREATE TABLE IF NOT EXISTS reviews (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       collaboration_id UUID NOT NULL UNIQUE REFERENCES collaborations(id) ON DELETE CASCADE,
