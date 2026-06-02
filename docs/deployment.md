@@ -1,157 +1,66 @@
-# Studio Aruo Deployment
+# Studio Aruo Vercel Deployment
 
-For a step-by-step launch flow, use `docs/launch-checklist.md`.
+This branch targets a Vercel demo deployment with:
 
-For a free static showcase, use `docs/github-pages.md`.
+- Vercel frontend and serverless API routes
+- Neon Postgres for accounts, works, pricing, collaborations, reviews, and chicken legs
+- Vercel Blob for portfolio image uploads
 
-## 1. Server
+## 1. Create Services
 
-Recommended target:
+1. Create a Neon project and copy its pooled Postgres connection string.
+2. Create a Vercel Blob store and copy `BLOB_READ_WRITE_TOKEN`.
+3. Import the GitHub repository into Vercel.
 
-- Ubuntu 22.04 or newer
-- Node.js 20 or newer
-- Nginx
-- PM2
+## 2. Configure Vercel Environment Variables
 
-Project path used in examples:
-
-```bash
-/var/www/studio-aruo
-```
-
-## 2. Environment
-
-Create `.env` on the server:
+Set these in Vercel Project Settings:
 
 ```env
-GEMINI_API_KEY="MY_GEMINI_API_KEY"
-APP_URL="https://your-domain.com"
-
-ADMIN_PASSWORD="replace-with-your-admin-password"
-VITE_ADMIN_PASSWORD="demo-admin"
-ADMIN_TOKEN_SECRET="replace-with-a-long-random-string"
-
-PORT="3002"
-ARUO_DB_PATH="/var/www/studio-aruo/data/db.json"
+DATABASE_URL="postgres://USER:PASSWORD@HOST.neon.tech/DB?sslmode=require"
+BLOB_READ_WRITE_TOKEN="vercel_blob_rw_token"
+SESSION_SECRET="use-a-long-random-string"
+SETUP_SECRET="use-a-different-long-random-string"
+VITE_API_BASE_URL=""
 ```
 
-Use a new random `ADMIN_TOKEN_SECRET` in production.
+Keep `VITE_API_BASE_URL` empty when the frontend and API are in the same Vercel project.
 
-## 3. Install And Build
+## 3. Deploy
+
+Vercel should use:
+
+```text
+Framework: Vite
+Build Command: npm run build
+Output Directory: dist
+```
+
+The repository also includes `vercel.json` with the same build settings.
+
+## 4. Initialize Database
+
+After the first deployment succeeds, call setup once:
 
 ```bash
-cd /var/www/studio-aruo
-npm ci
-npm run build
-mkdir -p logs data
+curl -X POST "https://your-vercel-domain.vercel.app/api/setup" \
+  -H "X-Setup-Secret: use-a-different-long-random-string"
 ```
 
-## 4. Start API With PM2
+Expected response:
 
-```bash
-npm install -g pm2
-pm2 start ecosystem.config.cjs
-pm2 save
-pm2 startup
+```json
+{ "ok": true }
 ```
 
-Check API:
+## 5. Smoke Test
 
-```bash
-curl http://127.0.0.1:3002/api/health
-```
+1. Register one designer account.
+2. Register one render artist account.
+3. Log in as the artist, edit profile, save pricing, upload a portfolio image.
+4. Log in as the designer, open the artist ranking, create a collaboration.
+5. Return to the designer dashboard, top up balance, write a review, and give chicken legs.
 
-## 5. Nginx
+## 6. Update Deployment
 
-Create an Nginx site:
-
-```nginx
-server {
-  listen 80;
-  server_name your-domain.com;
-
-  root /var/www/studio-aruo/dist;
-  index index.html;
-
-  client_max_body_size 60m;
-
-  location / {
-    try_files $uri $uri/ /index.html;
-  }
-
-  location /api/ {
-    proxy_pass http://127.0.0.1:3002/api/;
-    proxy_http_version 1.1;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-  }
-}
-```
-
-Enable and reload:
-
-```bash
-sudo ln -s /etc/nginx/sites-available/studio-aruo /etc/nginx/sites-enabled/studio-aruo
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
-## 6. HTTPS
-
-```bash
-sudo apt install certbot python3-certbot-nginx
-sudo certbot --nginx -d your-domain.com
-```
-
-## 7. Update Deployment
-
-```bash
-cd /var/www/studio-aruo
-git pull
-npm ci
-npm run build
-pm2 restart studio-aruo-api
-```
-
-## 8. Backups
-
-Back up this file regularly:
-
-```bash
-/var/www/studio-aruo/data/db.json
-```
-
-Manual backup:
-
-```bash
-npm run backup:db
-```
-
-Restore from a backup:
-
-```bash
-pm2 stop studio-aruo-api
-npm run restore:db -- backups/db-2026-05-31T12-00-00-000Z.json
-pm2 start studio-aruo-api
-```
-
-Recommended cron job:
-
-```bash
-crontab -e
-```
-
-Add:
-
-```cron
-0 3 * * * cd /var/www/studio-aruo && npm run backup:db >> logs/backup.log 2>&1
-```
-
-The backup script stores files in `backups/` and keeps the latest 30 by default. Override with:
-
-```env
-ARUO_BACKUP_DIR="/var/backups/studio-aruo"
-ARUO_BACKUP_KEEP="60"
-```
+Push new commits to the deployed branch. Vercel will rebuild automatically.

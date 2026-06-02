@@ -1,20 +1,42 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Studio Aruo Vercel Demo
 
-# Run and deploy your AI Studio app
+Studio Aruo is a designer/render-artist collaboration demo. It includes role-based accounts, artist rankings, portfolio uploads through Vercel Blob, collaboration records, reviews, chicken-leg rewards, and simulated designer balance top-ups.
 
-This contains everything you need to run your app locally.
+## Local Development
 
-View your app in AI Studio: https://ai.studio/apps/94c1c154-1146-4dd5-ba8b-dd59c226bd0d
+```bash
+npm install
+npm run dev
+```
 
-## Run Locally
+The local frontend runs on `http://127.0.0.1:3000`.
 
-**Prerequisites:**  Node.js
+## Required Environment Variables
 
+Copy `.env.example` to `.env.local` for local work, and configure the same values in Vercel Project Settings.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+```env
+DATABASE_URL="postgres://USER:PASSWORD@HOST.neon.tech/DB?sslmode=require"
+BLOB_READ_WRITE_TOKEN="vercel_blob_rw_token"
+SESSION_SECRET="replace-with-a-long-random-secret"
+SETUP_SECRET="replace-with-a-long-random-setup-secret"
+VITE_API_BASE_URL=""
+```
+
+`VITE_API_BASE_URL` can stay empty when the frontend and API are deployed in the same Vercel project.
+
+## First-Time Setup
+
+After deployment, initialize the Neon schema once:
+
+```bash
+curl -X POST "https://your-vercel-domain.vercel.app/api/setup" \
+  -H "X-Setup-Secret: replace-with-a-long-random-setup-secret"
+```
+
+## Verification
+
+```bash
+npm run lint
+npm run build
+```
