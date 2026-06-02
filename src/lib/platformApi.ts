@@ -1,3 +1,4 @@
+import { upload } from '@vercel/blob/client';
 import type {
   AuthSession,
   ArtistRank,
@@ -180,6 +181,29 @@ export async function createWork(input: {
     json: input,
   });
   return data.work;
+}
+
+function safeFileName(fileName: string) {
+  return fileName.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/-+/g, '-');
+}
+
+export async function uploadWorkImage(
+  file: File,
+  onProgress?: (percentage: number) => void
+): Promise<{ url: string; pathname: string }> {
+  const token = getSessionToken();
+  const result = await upload(`works/${Date.now()}-${safeFileName(file.name)}`, file, {
+    access: 'public',
+    handleUploadUrl: `${API_BASE}/api/blob/upload-token`,
+    contentType: file.type,
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    onUploadProgress: (event) => onProgress?.(event.percentage),
+  });
+
+  return {
+    url: result.url,
+    pathname: result.pathname,
+  };
 }
 
 export async function fetchPricing(artistId: string): Promise<PricingItem[]> {

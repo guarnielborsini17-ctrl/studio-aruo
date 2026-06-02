@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { LogOut, Plus, Save } from 'lucide-react';
+import { ImagePlus, LogOut, Plus, Save } from 'lucide-react';
 import { PageTransition } from '../components/PageTransition';
 import { useAuth } from '../contexts/AuthContext';
 import {
+  createWork,
   fetchCollaborations,
   fetchPricing,
   fetchWorks,
   savePricing,
   updateProfile,
+  uploadWorkImage,
 } from '../lib/platformApi';
 import type { Collaboration, PricingItem, Work } from '../types/platform';
 
@@ -27,6 +29,11 @@ export function ArtistDashboard() {
   const [works, setWorks] = useState<Work[]>([]);
   const [pricing, setPricing] = useState<PricingItem[]>([]);
   const [collaborations, setCollaborations] = useState<Collaboration[]>([]);
+  const [workTitle, setWorkTitle] = useState('');
+  const [workDescription, setWorkDescription] = useState('');
+  const [workFile, setWorkFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState('');
 
   useEffect(() => {
@@ -81,6 +88,34 @@ export function ArtistDashboard() {
 
   const addPricingItem = () => {
     setPricing((items) => [...items, { ...EMPTY_PRICING }]);
+  };
+
+  const uploadWork = async () => {
+    if (!workFile || !workTitle.trim() || uploading) {
+      setNotice('请先选择图片并填写作品标题');
+      return;
+    }
+
+    setUploading(true);
+    setUploadProgress(0);
+    try {
+      const blob = await uploadWorkImage(workFile, setUploadProgress);
+      const work = await createWork({
+        title: workTitle.trim(),
+        description: workDescription,
+        imageUrl: blob.url,
+        imagePath: blob.pathname,
+      });
+      setWorks((items) => [work, ...items]);
+      setWorkTitle('');
+      setWorkDescription('');
+      setWorkFile(null);
+      setNotice('作品已上传');
+    } catch {
+      setNotice('作品上传失败，请检查 Vercel Blob 配置');
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -201,9 +236,47 @@ export function ArtistDashboard() {
             </div>
 
             <div className="border border-glass-border rounded-lg p-5 bg-white/[0.035]">
-              <h3 className="text-lg text-white mb-4">展示作品</h3>
+              <div className="flex items-center gap-2 text-white mb-4">
+                <ImagePlus className="w-5 h-5" />
+                <h3 className="text-lg">展示作品</h3>
+              </div>
+
+              <div className="grid md:grid-cols-[1fr_1fr_auto] gap-3 mb-5">
+                <input
+                  className="bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-white outline-none"
+                  value={workTitle}
+                  onChange={(event) => setWorkTitle(event.target.value)}
+                  placeholder="作品标题"
+                />
+                <input
+                  className="bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-white outline-none"
+                  value={workDescription}
+                  onChange={(event) => setWorkDescription(event.target.value)}
+                  placeholder="作品说明"
+                />
+                <label className="px-4 py-2 border border-glass-border rounded-lg text-sm text-white cursor-pointer text-center">
+                  选择图片
+                  <input
+                    className="hidden"
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => setWorkFile(event.target.files?.[0] || null)}
+                  />
+                </label>
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
+                <button
+                  onClick={uploadWork}
+                  disabled={uploading}
+                  className="px-4 py-2 bg-white text-black rounded-lg text-sm disabled:opacity-50"
+                >
+                  {uploading ? `上传中 ${Math.round(uploadProgress)}%` : '上传作品'}
+                </button>
+                <span className="text-sm text-text-secondary truncate">{workFile?.name || '未选择图片'}</span>
+              </div>
+
               {works.length === 0 ? (
-                <p className="text-sm text-text-secondary">作品上传控件会在下一步接入 Vercel Blob。</p>
+                <p className="text-sm text-text-secondary">还没有上传作品。</p>
               ) : (
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {works.map((work) => (
