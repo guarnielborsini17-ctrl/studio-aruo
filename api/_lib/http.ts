@@ -23,8 +23,9 @@ export function sendJson(res: VercelResponse, status: number, data: unknown) {
 }
 
 export function methodNotAllowed(res: VercelResponse, allowed: string[]) {
-  applyCors(res, allowed);
-  res.setHeader('Allow', allowed.join(', '));
+  const allowedMethods = normalizeAllowedMethods(allowed);
+  applyCors(res, allowedMethods);
+  res.setHeader('Allow', allowedMethods.join(', '));
   sendJson(res, 405, { error: 'method_not_allowed' });
 }
 

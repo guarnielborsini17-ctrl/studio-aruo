@@ -58,6 +58,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
+  const currentRows = await sql`
+    SELECT status
+    FROM collaborations
+    WHERE id = ${id} AND (designer_id = ${user.id} OR artist_id = ${user.id})
+    LIMIT 1
+  `;
+
+  const currentStatus = (currentRows[0] as { status: string } | undefined)?.status;
+  if (!currentStatus) {
+    sendJson(res, 404, { error: 'not_found' });
+    return;
+  }
+
+  if (currentStatus === 'completed' && status === 'active') {
+    sendJson(res, 409, { error: 'collaboration_completed' });
+    return;
+  }
+
+  if (currentStatus === status) {
+    const details = await sql`
+      SELECT c.*, a.display_name AS artist_name, d.display_name AS designer_name
+      FROM collaborations c
+      JOIN users a ON a.id = c.artist_id
+      JOIN users d ON d.id = c.designer_id
+      WHERE c.id = ${id}
+      LIMIT 1
+    `;
+
+    sendJson(res, 200, { collaboration: mapCollaboration(details[0] as CollaborationRow) });
+    return;
+  }
+
   const rows = await sql`
     UPDATE collaborations
     SET status = ${status}, updated_at = now()

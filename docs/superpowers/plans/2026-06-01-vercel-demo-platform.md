@@ -1162,7 +1162,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const user = await requireUser(req, res);
   if (!user) return;
   const id = textValue(req.query.id);
-  const status = req.body?.status === 'completed' ? 'completed' : 'active';
+  const status = req.body?.status === 'completed' || req.body?.status === 'active' ? req.body.status : '';
+  if (!status) return sendJson(res, 400, { error: 'invalid_status' });
+  const current = await sql`
+    SELECT status FROM collaborations
+    WHERE id = ${id} AND (designer_id = ${user.id} OR artist_id = ${user.id})
+    LIMIT 1
+  `;
+  if (!current[0]) return sendJson(res, 404, { error: 'not_found' });
+  if (current[0].status === 'completed' && status === 'active') {
+    return sendJson(res, 409, { error: 'collaboration_completed' });
+  }
   const rows = await sql`
     UPDATE collaborations
     SET status = ${status}, updated_at = now()
