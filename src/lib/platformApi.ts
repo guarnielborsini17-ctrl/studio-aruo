@@ -182,6 +182,13 @@ export async function createWork(input: {
   return data.work;
 }
 
+export async function fetchPricing(artistId: string): Promise<PricingItem[]> {
+  const data = await platformRequest<{ items: PricingItem[] }>(`/api/pricing?artistId=${encodeURIComponent(artistId)}`, {
+    method: 'GET',
+  });
+  return data.items;
+}
+
 export async function fetchCollaborations(): Promise<Collaboration[]> {
   const data = await platformRequest<{ collaborations: Collaboration[] }>('/api/collaborations', {
     method: 'GET',
@@ -199,6 +206,32 @@ export async function createCollaboration(input: {
     json: input,
   });
   return data.collaboration;
+}
+
+export async function updateCollaborationStatus(
+  id: string,
+  status: 'active' | 'completed'
+): Promise<Collaboration> {
+  const data = await platformRequest<{ collaboration: Collaboration }>(
+    `/api/collaborations/${encodeURIComponent(id)}`,
+    {
+      method: 'PUT',
+      json: { status },
+    }
+  );
+  return data.collaboration;
+}
+
+export async function updateProfile(input: {
+  displayName: string;
+  bio?: string;
+  avatarUrl?: string;
+}): Promise<PlatformUser> {
+  const data = await platformRequest<{ user: PlatformUser }>('/api/profile', {
+    method: 'PUT',
+    json: input,
+  });
+  return normalizeUser(data.user);
 }
 
 export async function savePricing(items: PricingItem[]): Promise<PricingItem[]> {
