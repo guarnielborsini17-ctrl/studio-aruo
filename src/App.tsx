@@ -1,13 +1,19 @@
 import React, { createContext, useContext, useState, useMemo, useEffect, useRef } from 'react';
-import { HashRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
 import { apiGet, apiPost, apiPut } from './lib/api';
+import { AuthProvider } from './contexts/AuthContext';
 import { Gallery } from './pages/Gallery';
-import { CanvasSubmission } from './pages/CanvasSubmission';
-import { Admin } from './pages/Admin';
 import { Pricing } from './pages/Pricing';
 import { Guide } from './pages/Guide';
+import { Login } from './pages/Login';
+import { Register } from './pages/Register';
+import { Dashboard } from './pages/Dashboard';
+import { DesignerDashboard } from './pages/DesignerDashboard';
+import { ArtistDashboard } from './pages/ArtistDashboard';
+import { ArtistRanking } from './pages/ArtistRanking';
+import { ArtistProfile } from './pages/ArtistProfile';
 
 // --- Context for persisting Gallery state across route changes ---
 const INITIAL_PROJECTS = [
@@ -487,6 +493,16 @@ function Navigation() {
     { href: '/admin', label: '后台管理', number: '05' },
   ];
 
+  void links;
+
+  const navLinks = [
+    { href: '/', label: '作品库', number: '01' },
+    { href: '/pricing', label: '价格参考', number: '02' },
+    { href: '/artists', label: '绘图员排行', number: '03' },
+    { href: '/guide', label: '服务与手册', number: '04' },
+    { href: '/dashboard', label: '登录 / 工作台', number: '05' },
+  ];
+
   return (
     <nav className="fixed top-0 left-0 w-full z-50 p-6 flex justify-between items-start pointer-events-none">
       <div className="flex items-center gap-6 pointer-events-auto mix-blend-difference">
@@ -509,7 +525,7 @@ function Navigation() {
       </div>
 
       <div className="flex gap-8 pointer-events-auto mix-blend-difference">
-        {links.map((link) => {
+        {navLinks.map((link) => {
           const isActive = location.pathname === link.href;
           return (
             <Link 
@@ -545,9 +561,16 @@ function AnimatedRoutes() {
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Gallery />} />
         <Route path="/pricing" element={<Pricing />} />
-        <Route path="/submit" element={<CanvasSubmission />} />
+        <Route path="/artists" element={<ArtistRanking />} />
+        <Route path="/artists/:id" element={<ArtistProfile />} />
         <Route path="/guide" element={<Guide />} />
-        <Route path="/admin" element={<Admin />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/dashboard/designer" element={<DesignerDashboard />} />
+        <Route path="/dashboard/artist" element={<ArtistDashboard />} />
+        <Route path="/submit" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </AnimatePresence>
   );
@@ -556,13 +579,15 @@ function AnimatedRoutes() {
 export default function App() {
   return (
     <DataProvider>
-      <Router>
-        <div className="fluid-bg" />
-        <Navigation />
-        <main className="min-h-screen pt-32 pb-16 px-6 md:px-12 lg:px-24">
-          <AnimatedRoutes />
-        </main>
-      </Router>
+      <AuthProvider>
+        <Router>
+          <div className="fluid-bg" />
+          <Navigation />
+          <main className="min-h-screen pt-32 pb-16 px-6 md:px-12 lg:px-24">
+            <AnimatedRoutes />
+          </main>
+        </Router>
+      </AuthProvider>
     </DataProvider>
   );
 }
