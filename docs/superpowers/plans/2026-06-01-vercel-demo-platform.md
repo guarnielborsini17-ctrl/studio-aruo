@@ -1,4 +1,4 @@
-# Vercel Demo Platform Implementation Plan
+﻿# Vercel Demo Platform Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -333,7 +333,7 @@ export async function setupSchema() {
       name TEXT NOT NULL,
       description TEXT NOT NULL DEFAULT '',
       price INTEGER NOT NULL,
-      unit TEXT NOT NULL DEFAULT '张',
+      unit TEXT NOT NULL DEFAULT '寮?,
       sort_order INTEGER NOT NULL DEFAULT 0,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -737,7 +737,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const rows = userId
       ? await sql`SELECT * FROM works WHERE user_id = ${userId} ORDER BY created_at DESC`
       : await sql`SELECT * FROM works ORDER BY created_at DESC LIMIT 80`;
-    return sendJson(res, 200, { works: rows.map(mapWork) });
+    return sendJson(res, 200, { works: rows.map((row) => mapWork(row)) });
   }
 
   const user = await requireUser(req, res);
@@ -772,6 +772,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const user = await requireUser(req, res);
   if (!user) return;
   const id = textValue(req.query.id);
+  if (!id) return sendJson(res, 400, { error: 'invalid_work_id' });
   const rows = await sql`DELETE FROM works WHERE id = ${id} AND user_id = ${user.id} RETURNING id`;
   if (!rows[0]) return sendJson(res, 404, { error: 'not_found' });
   sendJson(res, 200, { ok: true });
@@ -822,7 +823,7 @@ function mapPricing(row: any) {
     name: row.name,
     description: row.description || '',
     price: Number(row.price || 0),
-    unit: row.unit || '张',
+    unit: row.unit || 'item',
     sortOrder: Number(row.sort_order || 0),
   };
 }
@@ -846,7 +847,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const name = typeof item.name === 'string' ? item.name.trim() : '';
     const price = Number(item.price || 0);
     const description = typeof item.description === 'string' ? item.description.trim() : '';
-    const unit = typeof item.unit === 'string' ? item.unit.trim() : '张';
+    const unit = typeof item.unit === 'string' ? item.unit.trim() : 'item';
     if (name && price >= 0) {
       await sql`
         INSERT INTO pricing_items (artist_id, name, description, price, unit, sort_order)
@@ -877,7 +878,7 @@ function mapArtist(row: any) {
     bio: row.bio || '',
     reviewCount: Number(row.review_count || 0),
     averageRating: Number(row.average_rating || 0),
-    chickenLegTotal: Number(row.chicken_total || 0),
+    chickenLegTotal: Number(row.chicken_leg_total || 0),
     collaborationCount: Number(row.collaboration_count || 0),
     workCount: Number(row.work_count || 0),
     score: Number(row.score || 0),
@@ -887,27 +888,50 @@ function mapArtist(row: any) {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!requireMethod(req, res, ['GET'])) return;
   const rows = await sql`
+    WITH review_stats AS (
+      SELECT artist_id, COUNT(*)::int AS review_count, COALESCE(AVG(rating), 0) AS average_rating
+      FROM reviews
+      GROUP BY artist_id
+    ),
+    chicken_stats AS (
+      SELECT artist_id, COALESCE(SUM(amount), 0) AS chicken_leg_total
+      FROM chicken_legs
+      GROUP BY artist_id
+    ),
+    collaboration_stats AS (
+      SELECT artist_id, COUNT(*)::int AS collaboration_count
+      FROM collaborations
+      GROUP BY artist_id
+    ),
+    work_stats AS (
+      SELECT user_id AS artist_id, COUNT(*)::int AS work_count
+      FROM works
+      GROUP BY user_id
+    )
     SELECT
-      u.*,
-      COUNT(DISTINCT r.id) AS review_count,
-      COALESCE(AVG(r.rating), 0) AS average_rating,
-      COALESCE(SUM(cl.amount), 0) AS chicken_total,
-      COUNT(DISTINCT c.id) AS collaboration_count,
-      COUNT(DISTINCT w.id) AS work_count,
+      u.id,
+      u.username,
+      u.display_name,
+      u.avatar_url,
+      u.bio,
+      COALESCE(rs.review_count, 0) AS review_count,
+      COALESCE(rs.average_rating, 0) AS average_rating,
+      COALESCE(cs.chicken_leg_total, 0) AS chicken_leg_total,
+      COALESCE(collab.collaboration_count, 0) AS collaboration_count,
+      COALESCE(ws.work_count, 0) AS work_count,
       (
-        COUNT(DISTINCT r.id) * 1000
-        + COALESCE(AVG(r.rating), 0) * 100
-        + COALESCE(SUM(cl.amount), 0) * 10
-        + COUNT(DISTINCT c.id) * 5
-        + COUNT(DISTINCT w.id)
+        COALESCE(rs.review_count, 0) * 1000
+        + COALESCE(rs.average_rating, 0) * 100
+        + COALESCE(cs.chicken_leg_total, 0) * 10
+        + COALESCE(collab.collaboration_count, 0) * 5
+        + COALESCE(ws.work_count, 0)
       ) AS score
     FROM users u
-    LEFT JOIN reviews r ON r.artist_id = u.id
-    LEFT JOIN chicken_legs cl ON cl.artist_id = u.id
-    LEFT JOIN collaborations c ON c.artist_id = u.id
-    LEFT JOIN works w ON w.user_id = u.id
+    LEFT JOIN review_stats rs ON rs.artist_id = u.id
+    LEFT JOIN chicken_stats cs ON cs.artist_id = u.id
+    LEFT JOIN collaboration_stats collab ON collab.artist_id = u.id
+    LEFT JOIN work_stats ws ON ws.artist_id = u.id
     WHERE u.role = 'artist'
-    GROUP BY u.id
     ORDER BY score DESC, u.created_at ASC
     LIMIT 100
   `;
@@ -924,25 +948,54 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { mapUser, mapWork, sql } from '../_lib/db';
 import { requireMethod, sendJson, textValue } from '../_lib/http';
 
+function mapPricing(row: any) {
+  return {
+    id: row.id,
+    artistId: row.artist_id,
+    name: row.name,
+    description: row.description || '',
+    price: Number(row.price || 0),
+    unit: row.unit || 'item',
+    sortOrder: Number(row.sort_order || 0),
+  };
+}
+
+function mapReview(row: any) {
+  return {
+    id: row.id,
+    collaborationId: row.collaboration_id,
+    designerId: row.designer_id,
+    artistId: row.artist_id,
+    designerName: row.designer_name || '',
+    designerAvatarUrl: row.designer_avatar_url || '',
+    rating: Number(row.rating || 0),
+    content: row.content,
+  };
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!requireMethod(req, res, ['GET'])) return;
   const id = textValue(req.query.id);
+  if (!id) return sendJson(res, 400, { error: 'artist_id_required' });
+
   const users = await sql`SELECT * FROM users WHERE id = ${id} AND role = 'artist' LIMIT 1`;
   if (!users[0]) return sendJson(res, 404, { error: 'artist_not_found' });
+
   const works = await sql`SELECT * FROM works WHERE user_id = ${id} ORDER BY created_at DESC`;
   const pricing = await sql`SELECT * FROM pricing_items WHERE artist_id = ${id} ORDER BY sort_order ASC`;
   const reviews = await sql`
-    SELECT r.*, u.display_name AS designer_name
+    SELECT r.*, u.display_name AS designer_name, u.avatar_url AS designer_avatar_url
     FROM reviews r
     JOIN users u ON u.id = r.designer_id
     WHERE r.artist_id = ${id}
     ORDER BY r.created_at DESC
   `;
+
   sendJson(res, 200, {
     artist: mapUser(users[0]),
-    works: works.map(mapWork),
-    pricing,
-    reviews,
+    works: works.map((row) => mapWork(row)),
+    pricing: pricing.map(mapPricing),
+    reviews: reviews.map(mapReview),
   });
 }
 ```
@@ -957,16 +1010,7 @@ npm run lint
 
 Expected: TypeScript passes.
 
-Commit:
-
-```bash
-git add api/blob api/works api/profile.ts api/pricing.ts api/artists
-git commit -m "feat: add portfolio and artist APIs"
-```
-
----
-
-### Task 5: Add Collaboration, Review, Chicken Leg, And Demo Balance APIs
+Commit:### Task 5: Add Collaboration, Review, Chicken Leg, And Demo Balance APIs
 
 **Files:**
 - Create: `api/collaborations/index.ts`
@@ -1026,7 +1070,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (user.role !== 'designer') return sendJson(res, 403, { error: 'designer_required' });
   const artistId = textValue(req.body?.artistId);
-  const title = textValue(req.body?.title) || '合作项目';
+  const title = textValue(req.body?.title) || '鍚堜綔椤圭洰';
   const note = textValue(req.body?.note);
   const artists = await sql`SELECT id FROM users WHERE id = ${artistId} AND role = 'artist' LIMIT 1`;
   if (!artists[0]) return sendJson(res, 404, { error: 'artist_not_found' });
@@ -1444,22 +1488,22 @@ export function Login() {
       await login(username, password);
       navigate('/dashboard');
     } catch {
-      setError('账号或密码不正确');
+      setError('璐﹀彿鎴栧瘑鐮佷笉姝ｇ‘');
     }
   };
 
   return (
     <PageTransition>
       <section className="max-w-md mx-auto pt-16">
-        <h2 className="text-4xl text-white mb-3">登录</h2>
-        <p className="text-text-secondary mb-8">进入你的 Studio Aruo 工作台</p>
+        <h2 className="text-4xl text-white mb-3">鐧诲綍</h2>
+        <p className="text-text-secondary mb-8">杩涘叆浣犵殑 Studio Aruo 宸ヤ綔鍙?/p>
         <form onSubmit={submit} className="space-y-4">
-          <input className="w-full bg-white/5 border border-glass-border rounded-lg px-4 py-3 text-white" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="账号" />
-          <input className="w-full bg-white/5 border border-glass-border rounded-lg px-4 py-3 text-white" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="密码" type="password" />
+          <input className="w-full bg-white/5 border border-glass-border rounded-lg px-4 py-3 text-white" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="璐﹀彿" />
+          <input className="w-full bg-white/5 border border-glass-border rounded-lg px-4 py-3 text-white" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="瀵嗙爜" type="password" />
           {error && <p className="text-accent-orange text-sm">{error}</p>}
-          <button className="w-full bg-white text-black rounded-lg py-3 font-medium">登录</button>
+          <button className="w-full bg-white text-black rounded-lg py-3 font-medium">鐧诲綍</button>
         </form>
-        <Link className="block mt-5 text-accent-blue text-sm" to="/register">还没有账号？去注册</Link>
+        <Link className="block mt-5 text-accent-blue text-sm" to="/register">杩樻病鏈夎处鍙凤紵鍘绘敞鍐?/Link>
       </section>
     </PageTransition>
   );
@@ -1494,20 +1538,20 @@ export function Register() {
       await register({ username, displayName, password, role });
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err?.message === 'username_exists' ? '这个账号已经被注册' : '注册失败，请检查信息');
+      setError(err?.message === 'username_exists' ? '杩欎釜璐﹀彿宸茬粡琚敞鍐? : '娉ㄥ唽澶辫触锛岃妫€鏌ヤ俊鎭?);
     }
   };
 
   return (
     <PageTransition>
       <section className="max-w-2xl mx-auto pt-12">
-        <h2 className="text-4xl text-white mb-3">创建账号</h2>
-        <p className="text-text-secondary mb-8">选择你在平台里的身份，第一期注册后不可修改。</p>
+        <h2 className="text-4xl text-white mb-3">鍒涘缓璐﹀彿</h2>
+        <p className="text-text-secondary mb-8">閫夋嫨浣犲湪骞冲彴閲岀殑韬唤锛岀涓€鏈熸敞鍐屽悗涓嶅彲淇敼銆?/p>
         <form onSubmit={submit} className="space-y-5">
           <div className="grid md:grid-cols-2 gap-3">
             {[
-              { role: 'designer' as const, title: '设计师', desc: '挑选绘图员、评价、加鸡腿、上传展示作品' },
-              { role: 'artist' as const, title: '绘图员', desc: '上传作品、编辑套餐价格、获得评价和鸡腿' },
+              { role: 'designer' as const, title: '璁捐甯?, desc: '鎸戦€夌粯鍥惧憳銆佽瘎浠枫€佸姞楦¤吙銆佷笂浼犲睍绀轰綔鍝? },
+              { role: 'artist' as const, title: '缁樺浘鍛?, desc: '涓婁紶浣滃搧銆佺紪杈戝椁愪环鏍笺€佽幏寰楄瘎浠峰拰楦¤吙' },
             ].map((item) => (
               <button type="button" key={item.role} onClick={() => setRole(item.role)} className={cn('text-left border rounded-lg p-4', role === item.role ? 'bg-white text-black border-white' : 'bg-white/5 text-white border-glass-border')}>
                 <strong>{item.title}</strong>
@@ -1515,11 +1559,11 @@ export function Register() {
               </button>
             ))}
           </div>
-          <input className="w-full bg-white/5 border border-glass-border rounded-lg px-4 py-3 text-white" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="账号" />
-          <input className="w-full bg-white/5 border border-glass-border rounded-lg px-4 py-3 text-white" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="昵称 / 展示名" />
-          <input className="w-full bg-white/5 border border-glass-border rounded-lg px-4 py-3 text-white" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="密码，至少 6 位" type="password" />
+          <input className="w-full bg-white/5 border border-glass-border rounded-lg px-4 py-3 text-white" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="璐﹀彿" />
+          <input className="w-full bg-white/5 border border-glass-border rounded-lg px-4 py-3 text-white" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="鏄电О / 灞曠ず鍚? />
+          <input className="w-full bg-white/5 border border-glass-border rounded-lg px-4 py-3 text-white" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="瀵嗙爜锛岃嚦灏?6 浣? type="password" />
           {error && <p className="text-accent-orange text-sm">{error}</p>}
-          <button className="w-full bg-white text-black rounded-lg py-3 font-medium">注册并进入工作台</button>
+          <button className="w-full bg-white text-black rounded-lg py-3 font-medium">娉ㄥ唽骞惰繘鍏ュ伐浣滃彴</button>
         </form>
       </section>
     </PageTransition>
@@ -1538,7 +1582,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 export function Dashboard() {
   const { user, loading } = useAuth();
-  if (loading) return <div className="text-white">加载中...</div>;
+  if (loading) return <div className="text-white">鍔犺浇涓?..</div>;
   if (!user) return <Navigate to="/login" replace />;
   return <Navigate to={user.role === 'designer' ? '/dashboard/designer' : '/dashboard/artist'} replace />;
 }
@@ -1564,11 +1608,11 @@ Update navigation links:
 
 ```ts
 const links = [
-  { href: '/', label: '作品库', number: '01' },
-  { href: '/pricing', label: '价格参考', number: '02' },
-  { href: '/artists', label: '绘图员排行', number: '03' },
-  { href: '/guide', label: '服务与手册', number: '04' },
-  { href: '/dashboard', label: '登录 / 工作台', number: '05' },
+  { href: '/', label: '浣滃搧搴?, number: '01' },
+  { href: '/pricing', label: '浠锋牸鍙傝€?, number: '02' },
+  { href: '/artists', label: '缁樺浘鍛樻帓琛?, number: '03' },
+  { href: '/guide', label: '鏈嶅姟涓庢墜鍐?, number: '04' },
+  { href: '/dashboard', label: '鐧诲綍 / 宸ヤ綔鍙?, number: '05' },
 ];
 ```
 
@@ -1684,7 +1728,7 @@ Create `src/pages/ArtistProfile.tsx` with:
 - Works grid.
 - Pricing list.
 - Reviews list.
-- Designer-only "发起合作" form using `createCollaboration`.
+- Designer-only "鍙戣捣鍚堜綔" form using `createCollaboration`.
 
 If the logged-in user is not a designer, hide the collaboration form and show a short note.
 
@@ -1784,7 +1828,7 @@ export function ImageUploadField({ value, onChange }: { value: string; onChange:
       const next = await uploadImage(file);
       onChange({ url: next.url, path: next.pathname });
     } catch {
-      setError('图片上传失败，请换一张图片重试');
+      setError('鍥剧墖涓婁紶澶辫触锛岃鎹竴寮犲浘鐗囬噸璇?);
     } finally {
       setBusy(false);
     }
@@ -1795,7 +1839,7 @@ export function ImageUploadField({ value, onChange }: { value: string; onChange:
       <input ref={ref} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => choose(e.target.files?.[0])} />
       <button type="button" onClick={() => ref.current?.click()} className="inline-flex items-center gap-2 bg-white/10 border border-glass-border rounded-lg px-4 py-2 text-white">
         <Upload size={16} />
-        {busy ? '上传中...' : '上传图片'}
+        {busy ? '涓婁紶涓?..' : '涓婁紶鍥剧墖'}
       </button>
       {value && <img src={value} alt="" className="w-32 h-24 object-cover rounded-lg border border-glass-border" />}
       {error && <p className="text-accent-orange text-sm">{error}</p>}
@@ -1967,4 +2011,5 @@ git commit -m "docs: add Vercel demo setup guide"
 - Spec coverage: This plan covers Vercel deployment, Neon Postgres, Vercel Blob, registration/login, role dashboards, canvas removal, collaboration-gated reviews, chicken legs, simulated top-up, and ranking.
 - Placeholder scan: No `TBD`, `TODO`, "implement later", or unspecified test steps remain.
 - Type consistency: Frontend types use `designer` and `artist`; API routes use the same role literals. Work fields use `imageUrl`/`imagePath` on the frontend and `image_url`/`image_path` in the database.
+
 
