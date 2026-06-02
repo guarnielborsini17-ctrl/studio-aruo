@@ -55,7 +55,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     | undefined;
 
   if (!collaboration) {
-    sendJson(res, 404, { error: 'not_found' });
+    sendJson(res, 403, { error: 'collaboration_required' });
     return;
   }
 
@@ -74,7 +74,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (error?.code === '23503') {
-      sendJson(res, 404, { error: 'not_found' });
+      sendJson(res, 403, { error: 'collaboration_required' });
       return;
     }
 

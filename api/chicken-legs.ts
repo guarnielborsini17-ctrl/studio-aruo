@@ -94,12 +94,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     | undefined;
 
   if (!row || Number(row.collaboration_count || 0) === 0) {
-    sendJson(res, 404, { error: 'not_found' });
+    sendJson(res, 403, { error: 'collaboration_required' });
     return;
   }
 
   if (Number(row.balance_update_count || 0) === 0 || Number(row.inserted_count || 0) === 0) {
-    sendJson(res, 409, { error: 'insufficient_balance' });
+    sendJson(res, 400, { error: 'insufficient_balance' });
     return;
   }
 
