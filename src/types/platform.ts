@@ -33,8 +33,8 @@ export type ArtistRank = PlatformUser & {
 };
 
 export type PricingItem = {
-  id: string;
-  artistId: string;
+  id?: string;
+  artistId?: string;
   name: string;
   description?: string;
   price: number;
