@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useMemo, useEffect, useRef } from 'react';
+﻿import React, { createContext, useContext, useState, useMemo, useEffect, useRef } from 'react';
 import { HashRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
@@ -486,16 +486,6 @@ function Navigation() {
   const { status } = useContext(StatusContext);
 
   const links = [
-    { href: '/', label: '阿鶸的作品库', number: '01' },
-    { href: '/pricing', label: '价格参考', number: '02' },
-    { href: '/submit', label: '需求交互版', number: '03' },
-    { href: '/guide', label: '服务与手册', number: '04' },
-    { href: '/admin', label: '后台管理', number: '05' },
-  ];
-
-  void links;
-
-  const navLinks = [
     { href: '/', label: '作品库', number: '01' },
     { href: '/pricing', label: '价格参考', number: '02' },
     { href: '/artists', label: '绘图员排行', number: '03' },
@@ -525,7 +515,7 @@ function Navigation() {
       </div>
 
       <div className="flex gap-8 pointer-events-auto mix-blend-difference">
-        {navLinks.map((link) => {
+        {links.map((link) => {
           const isActive = location.pathname === link.href;
           return (
             <Link 
