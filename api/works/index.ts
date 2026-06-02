@@ -2,8 +2,28 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { mapWork, sql } from '../_lib/db';
 import { requireMethod, requireUser, sendJson, textValue } from '../_lib/http';
 
+const PUBLIC_BLOB_HOST_SUFFIX = '.public.blob.vercel-storage.com';
+const BLOB_HOST_SUFFIX = '.blob.vercel-storage.com';
+
 function queryText(value: string | string[] | undefined) {
   return textValue(Array.isArray(value) ? value[0] : value);
+}
+
+function isValidBlobImageUrl(value: string) {
+  try {
+    const url = new URL(value);
+    const hostname = url.hostname.toLowerCase();
+
+    return (
+      url.protocol === 'https:' &&
+      url.pathname !== '/' &&
+      (hostname.endsWith(PUBLIC_BLOB_HOST_SUFFIX) ||
+        hostname === 'blob.vercel-storage.com' ||
+        hostname.endsWith(BLOB_HOST_SUFFIX))
+    );
+  } catch {
+    return false;
+  }
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -31,8 +51,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const imageUrl = textValue(req.body?.imageUrl);
   const imagePath = textValue(req.body?.imagePath);
 
-  if (!title || !imageUrl) {
+  if (!title) {
     sendJson(res, 400, { error: 'invalid_work' });
+    return;
+  }
+
+  if (!imageUrl || !imagePath || !isValidBlobImageUrl(imageUrl)) {
+    sendJson(res, 400, { error: 'invalid_work_image' });
     return;
   }
 

@@ -14,8 +14,61 @@ type PricingRow = {
   updated_at?: string;
 };
 
+const ALLOWED_UNITS = new Set([
+  'item',
+  'piece',
+  'set',
+  'session',
+  'hour',
+  'day',
+  '次',
+  '张',
+  '套',
+  '起/张',
+  '起/套',
+  '起/次',
+  '起/小时',
+  '起/天',
+]);
+
 function queryText(value: string | string[] | undefined) {
   return textValue(Array.isArray(value) ? value[0] : value);
+}
+
+function isValidUnit(unit: string) {
+  return ALLOWED_UNITS.has(unit);
+}
+
+function parsePricingItems(items: unknown) {
+  if (!Array.isArray(items)) {
+    return null;
+  }
+
+  const parsed: Array<{
+    name: string;
+    description: string;
+    price: number;
+    unit: string;
+  }> = [];
+
+  for (const item of items) {
+    if (!item || typeof item !== 'object') {
+      return null;
+    }
+
+    const name = textValue((item as { name?: unknown }).name);
+    const description = textValue((item as { description?: unknown }).description);
+    const unit = textValue((item as { unit?: unknown }).unit);
+    const price = Number((item as { price?: unknown }).price);
+
+    if (!name || !unit || !Number.isFinite(price) || price < 0 || !isValidUnit(unit)) {
+      return null;
+    }
+
+    parsed.push({ name, description, price, unit });
+  }
+
+  return parsed;
 }
 
 function mapPricing(row: PricingRow) {
@@ -54,25 +107,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const items = Array.isArray(req.body?.items) ? req.body.items : [];
+  const items = parsePricingItems(req.body?.items);
+  if (!items) {
+    sendJson(res, 400, { error: 'invalid_pricing_items' });
+    return;
+  }
 
-  await sql`DELETE FROM pricing_items WHERE artist_id = ${user.id}`;
+  const transactionalSql = sql as typeof sql & {
+    transaction?: (queries: unknown[]) => Promise<unknown>;
+  };
 
-  for (let index = 0; index < items.length; index += 1) {
-    const item = items[index] || {};
-    const name = textValue(item.name);
-    const description = textValue(item.description);
-    const unit = textValue(item.unit) || 'item';
-    const price = Number(item.price);
+  if (typeof transactionalSql.transaction === 'function') {
+    await transactionalSql.transaction([
+      transactionalSql`DELETE FROM pricing_items WHERE artist_id = ${user.id}`,
+      ...items.map(
+        (item, index) => transactionalSql`
+          INSERT INTO pricing_items (artist_id, name, description, price, unit, sort_order)
+          VALUES (${user.id}, ${item.name}, ${item.description}, ${item.price}, ${item.unit}, ${index})
+        `
+      ),
+    ]);
+  } else {
+    await sql`DELETE FROM pricing_items WHERE artist_id = ${user.id}`;
 
-    if (!name || Number.isNaN(price) || price < 0) {
-      continue;
+    for (let index = 0; index < items.length; index += 1) {
+      const item = items[index];
+      await sql`
+        INSERT INTO pricing_items (artist_id, name, description, price, unit, sort_order)
+        VALUES (${user.id}, ${item.name}, ${item.description}, ${item.price}, ${item.unit}, ${index})
+      `;
     }
-
-    await sql`
-      INSERT INTO pricing_items (artist_id, name, description, price, unit, sort_order)
-      VALUES (${user.id}, ${name}, ${description}, ${price}, ${unit}, ${index})
-    `;
   }
 
   const rows = await sql`SELECT * FROM pricing_items WHERE artist_id = ${user.id} ORDER BY sort_order ASC`;

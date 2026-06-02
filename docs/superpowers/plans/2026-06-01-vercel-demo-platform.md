@@ -747,7 +747,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const description = textValue(req.body?.description);
   const imageUrl = textValue(req.body?.imageUrl);
   const imagePath = textValue(req.body?.imagePath);
-  if (!title || !imageUrl) return sendJson(res, 400, { error: 'invalid_work' });
+  if (!title) return sendJson(res, 400, { error: 'invalid_work' });
+  if (
+    !imageUrl ||
+    !imagePath ||
+    (() => {
+      try {
+        const url = new URL(imageUrl);
+        const host = url.hostname.toLowerCase();
+        return (
+          url.protocol !== 'https:' ||
+          url.pathname === '/' ||
+          (!host.endsWith('.public.blob.vercel-storage.com') &&
+            host !== 'blob.vercel-storage.com' &&
+            !host.endsWith('.blob.vercel-storage.com'))
+        );
+      } catch {
+        return true;
+      }
+    })()
+  ) {
+    return sendJson(res, 400, { error: 'invalid_work_image' });
+  }
 
   const rows = await sql`
     INSERT INTO works (user_id, title, description, image_url, image_path)
@@ -816,6 +837,23 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { sql } from './_lib/db';
 import { requireMethod, requireRole, sendJson } from './_lib/http';
 
+const ALLOWED_UNITS = new Set([
+  'item',
+  'piece',
+  'set',
+  'session',
+  'hour',
+  'day',
+  '次',
+  '张',
+  '套',
+  '起/张',
+  '起/套',
+  '起/次',
+  '起/小时',
+  '起/天',
+]);
+
 function mapPricing(row: any) {
   return {
     id: row.id,
@@ -826,6 +864,23 @@ function mapPricing(row: any) {
     unit: row.unit || 'item',
     sortOrder: Number(row.sort_order || 0),
   };
+}
+
+function parsePricingItems(items: unknown) {
+  if (!Array.isArray(items)) return null;
+
+  const parsed: Array<{ name: string; description: string; price: number; unit: string }> = [];
+  for (const item of items) {
+    if (!item || typeof item !== 'object') return null;
+    const name = typeof item.name === 'string' ? item.name.trim() : '';
+    const description = typeof item.description === 'string' ? item.description.trim() : '';
+    const unit = typeof item.unit === 'string' ? item.unit.trim() : '';
+    const price = Number(item.price);
+    if (!name || !unit || !Number.isFinite(price) || price < 0 || !ALLOWED_UNITS.has(unit)) return null;
+    parsed.push({ name, description, price, unit });
+  }
+
+  return parsed;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -840,18 +895,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const user = await requireRole(req, res, 'artist');
   if (!user) return;
-  const items = Array.isArray(req.body?.items) ? req.body.items : [];
-  await sql`DELETE FROM pricing_items WHERE artist_id = ${user.id}`;
-  for (let i = 0; i < items.length; i += 1) {
-    const item = items[i];
-    const name = typeof item.name === 'string' ? item.name.trim() : '';
-    const price = Number(item.price || 0);
-    const description = typeof item.description === 'string' ? item.description.trim() : '';
-    const unit = typeof item.unit === 'string' ? item.unit.trim() : 'item';
-    if (name && price >= 0) {
+  const items = parsePricingItems(req.body?.items);
+  if (!items) return sendJson(res, 400, { error: 'invalid_pricing_items' });
+
+  const transactionalSql = sql as typeof sql & { transaction?: (queries: unknown[]) => Promise<unknown> };
+  if (typeof transactionalSql.transaction === 'function') {
+    await transactionalSql.transaction([
+      transactionalSql`DELETE FROM pricing_items WHERE artist_id = ${user.id}`,
+      ...items.map(
+        (item, i) => transactionalSql`
+          INSERT INTO pricing_items (artist_id, name, description, price, unit, sort_order)
+          VALUES (${user.id}, ${item.name}, ${item.description}, ${item.price}, ${item.unit}, ${i})
+        `
+      ),
+    ]);
+  } else {
+    await sql`DELETE FROM pricing_items WHERE artist_id = ${user.id}`;
+    for (let i = 0; i < items.length; i += 1) {
+      const item = items[i];
       await sql`
         INSERT INTO pricing_items (artist_id, name, description, price, unit, sort_order)
-        VALUES (${user.id}, ${name}, ${description}, ${price}, ${unit}, ${i})
+        VALUES (${user.id}, ${item.name}, ${item.description}, ${item.price}, ${item.unit}, ${i})
       `;
     }
   }
