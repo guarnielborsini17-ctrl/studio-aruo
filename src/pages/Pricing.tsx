@@ -32,6 +32,11 @@ function getIcon(iconType: string) {
   }
 }
 
+function unitLabel(unit: string) {
+  if (unit === 'sqm') return '㎡';
+  return unit;
+}
+
 function PublicPriceCard({ item, accent = 'blue' }: { item: PublicPricingItem; accent?: 'blue' | 'orange' }) {
   const Icon = getIcon(item.iconType);
   const iconColor = accent === 'orange' ? 'text-accent-orange' : 'text-accent-blue';
@@ -72,7 +77,7 @@ function CustomPriceCard({ item }: { item: PricingItem }) {
         <p className="text-right text-white">
           <span className="text-text-secondary text-xs">¥</span>
           <span className="text-2xl font-serif italic mx-1">{item.price}</span>
-          <span className="text-xs text-text-secondary">/{item.unit}</span>
+          <span className="text-xs text-text-secondary">/{unitLabel(item.unit)}</span>
         </p>
       </div>
     </article>

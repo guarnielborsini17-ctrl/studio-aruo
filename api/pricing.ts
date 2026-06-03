@@ -21,6 +21,7 @@ const ALLOWED_UNITS = new Set([
   'session',
   'hour',
   'day',
+  'sqm',
   '次',
   '张',
   '套',

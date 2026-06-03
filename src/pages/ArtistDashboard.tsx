@@ -273,6 +273,7 @@ export function ArtistDashboard() {
                       <option value="set">set</option>
                       <option value="hour">hour</option>
                       <option value="day">day</option>
+                      <option value="sqm">㎡</option>
                     </select>
                   </div>
                 ))}
