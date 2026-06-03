@@ -96,7 +96,7 @@ export function ArtistDashboard() {
       .map((item) => ({
         ...item,
         name: item.name.trim(),
-        unit: item.unit || 'item',
+        unit: item.unit === 'item' || item.unit === 'day' ? 'piece' : item.unit || 'piece',
         price: Number(item.price || 0),
       }))
       .filter((item) => item.name);
@@ -265,14 +265,12 @@ export function ArtistDashboard() {
                     />
                     <select
                       className="bg-[#1b1b20] border border-glass-border rounded-lg px-3 py-2 text-white outline-none focus:border-accent-blue/60"
-                      value={item.unit}
+                      value={item.unit === 'item' || item.unit === 'day' ? 'piece' : item.unit}
                       onChange={(event) => updatePricingItem(index, { unit: event.target.value })}
                     >
-                      <option value="item">按项</option>
                       <option value="piece">按张</option>
                       <option value="set">按套</option>
                       <option value="hour">按小时</option>
-                      <option value="day">按天</option>
                       <option value="sqm">按平方</option>
                     </select>
                   </div>
