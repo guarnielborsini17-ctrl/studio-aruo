@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
+    "dev:api": "tsx scripts/local-api-dev.ts",
     "dev:server": "tsx watch server/index.ts",
     "start:api": "tsx server/index.ts",
     "start": "npm run start:api",
