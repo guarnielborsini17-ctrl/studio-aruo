@@ -33,6 +33,11 @@ function getIcon(iconType: string) {
 }
 
 function unitLabel(unit: string) {
+  if (unit === 'item') return '项';
+  if (unit === 'piece') return '张';
+  if (unit === 'set') return '套';
+  if (unit === 'hour') return '小时';
+  if (unit === 'day') return '天';
   if (unit === 'sqm') return '㎡';
   return unit;
 }

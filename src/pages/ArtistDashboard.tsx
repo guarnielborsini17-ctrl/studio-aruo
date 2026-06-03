@@ -268,12 +268,12 @@ export function ArtistDashboard() {
                       value={item.unit}
                       onChange={(event) => updatePricingItem(index, { unit: event.target.value })}
                     >
-                      <option value="item">按项 / item</option>
-                      <option value="piece">按张 / piece</option>
-                      <option value="set">按套 / set</option>
-                      <option value="hour">按小时 / hour</option>
-                      <option value="day">按天 / day</option>
-                      <option value="sqm">按平方 / ㎡</option>
+                      <option value="item">按项</option>
+                      <option value="piece">按张</option>
+                      <option value="set">按套</option>
+                      <option value="hour">按小时</option>
+                      <option value="day">按天</option>
+                      <option value="sqm">按平方</option>
                     </select>
                   </div>
                 ))}
