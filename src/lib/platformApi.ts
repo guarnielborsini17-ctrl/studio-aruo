@@ -206,6 +206,25 @@ export async function uploadWorkImage(
   };
 }
 
+export async function uploadAvatarImage(
+  file: File,
+  onProgress?: (percentage: number) => void
+): Promise<{ url: string; pathname: string }> {
+  const token = getSessionToken();
+  const result = await upload(`avatars/${Date.now()}-${safeFileName(file.name)}`, file, {
+    access: 'public',
+    handleUploadUrl: `${API_BASE}/api/blob/upload-token`,
+    contentType: file.type,
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    onUploadProgress: (event) => onProgress?.(event.percentage),
+  });
+
+  return {
+    url: result.url,
+    pathname: result.pathname,
+  };
+}
+
 export async function fetchPricing(artistId: string): Promise<PricingItem[]> {
   const data = await platformRequest<{ items: PricingItem[] }>(`/api/pricing?artistId=${encodeURIComponent(artistId)}`, {
     method: 'GET',

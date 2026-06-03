@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { ImagePlus, LogOut, Plus, Save } from 'lucide-react';
+import { ImagePlus, LogOut, Plus, Save, Upload } from 'lucide-react';
 import { PageTransition } from '../components/PageTransition';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -10,6 +10,7 @@ import {
   fetchWorks,
   savePricing,
   updateProfile,
+  uploadAvatarImage,
   uploadWorkImage,
 } from '../lib/platformApi';
 import type { Collaboration, PricingItem, Work } from '../types/platform';
@@ -21,11 +22,17 @@ const EMPTY_PRICING: PricingItem = {
   unit: 'item',
 };
 
+const actionButtonClass =
+  'inline-flex items-center justify-center gap-2 rounded-lg border border-glass-border bg-white/[0.035] px-4 py-2 text-sm text-white transition-colors hover:border-accent-blue/60 hover:bg-accent-blue/10 disabled:cursor-not-allowed disabled:opacity-50';
+
 export function ArtistDashboard() {
   const { user, loading, logout, refreshUser } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarProgress, setAvatarProgress] = useState(0);
   const [works, setWorks] = useState<Work[]>([]);
   const [pricing, setPricing] = useState<PricingItem[]>([]);
   const [collaborations, setCollaborations] = useState<Collaboration[]>([]);
@@ -61,6 +68,26 @@ export function ArtistDashboard() {
       setNotice('资料已保存');
     } catch {
       setNotice('资料保存失败');
+    }
+  };
+
+  const uploadAvatar = async () => {
+    if (!avatarFile || avatarUploading) {
+      setNotice('请先选择头像图片');
+      return;
+    }
+
+    setAvatarUploading(true);
+    setAvatarProgress(0);
+    try {
+      const blob = await uploadAvatarImage(avatarFile, setAvatarProgress);
+      setAvatarUrl(blob.url);
+      setAvatarFile(null);
+      setNotice('头像已上传，记得保存资料');
+    } catch {
+      setNotice('头像上传失败，请检查 Vercel Blob 配置');
+    } finally {
+      setAvatarUploading(false);
     }
   };
 
@@ -141,24 +168,45 @@ export function ArtistDashboard() {
               <h3 className="text-lg text-white mb-4">展示资料</h3>
               <div className="space-y-3">
                 <input
-                  className="w-full bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-white outline-none"
+                  className="w-full bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-white outline-none focus:border-accent-blue/60"
                   value={displayName}
                   onChange={(event) => setDisplayName(event.target.value)}
                   placeholder="展示名"
                 />
-                <input
-                  className="w-full bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-white outline-none"
-                  value={avatarUrl}
-                  onChange={(event) => setAvatarUrl(event.target.value)}
-                  placeholder="头像 URL"
-                />
+
+                <div className="flex items-center gap-3 rounded-lg border border-glass-border bg-white/5 p-3">
+                  <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full border border-glass-border bg-black/30">
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt="头像预览" className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-xs text-text-secondary">头像</div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-accent-blue hover:text-white">
+                      <Upload className="w-4 h-4" />
+                      选择头像图片
+                      <input
+                        className="hidden"
+                        type="file"
+                        accept="image/*"
+                        onChange={(event) => setAvatarFile(event.target.files?.[0] || null)}
+                      />
+                    </label>
+                    <p className="mt-1 truncate text-xs text-text-secondary">{avatarFile?.name || '未选择图片'}</p>
+                  </div>
+                  <button onClick={uploadAvatar} disabled={avatarUploading} className={actionButtonClass}>
+                    {avatarUploading ? `${Math.round(avatarProgress)}%` : '上传'}
+                  </button>
+                </div>
+
                 <textarea
-                  className="w-full min-h-28 bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-white outline-none"
+                  className="w-full min-h-28 bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-white outline-none focus:border-accent-blue/60"
                   value={bio}
                   onChange={(event) => setBio(event.target.value)}
                   placeholder="简介"
                 />
-                <button onClick={saveProfile} className="inline-flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg text-sm">
+                <button onClick={saveProfile} className={actionButtonClass}>
                   <Save className="w-4 h-4" />
                   保存资料
                 </button>
@@ -186,7 +234,7 @@ export function ArtistDashboard() {
             <div className="border border-glass-border rounded-lg p-5 bg-white/[0.035]">
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-lg text-white">套餐价格</h3>
-                <button onClick={addPricingItem} className="inline-flex items-center gap-2 text-sm text-accent-blue">
+                <button onClick={addPricingItem} className="inline-flex items-center gap-2 text-sm text-accent-blue hover:text-white">
                   <Plus className="w-4 h-4" />
                   增加套餐
                 </button>
@@ -196,19 +244,19 @@ export function ArtistDashboard() {
                 {pricing.map((item, index) => (
                   <div key={item.id || index} className="grid md:grid-cols-[1fr_1fr_120px_120px] gap-3">
                     <input
-                      className="bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-white outline-none"
+                      className="bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-white outline-none focus:border-accent-blue/60"
                       value={item.name}
                       onChange={(event) => updatePricingItem(index, { name: event.target.value })}
                       placeholder="套餐名称"
                     />
                     <input
-                      className="bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-white outline-none"
+                      className="bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-white outline-none focus:border-accent-blue/60"
                       value={item.description || ''}
                       onChange={(event) => updatePricingItem(index, { description: event.target.value })}
                       placeholder="说明"
                     />
                     <input
-                      className="bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-white outline-none"
+                      className="bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-white outline-none focus:border-accent-blue/60"
                       type="number"
                       min={0}
                       value={item.price}
@@ -216,7 +264,7 @@ export function ArtistDashboard() {
                       placeholder="价格"
                     />
                     <select
-                      className="bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-white outline-none"
+                      className="bg-[#1b1b20] border border-glass-border rounded-lg px-3 py-2 text-white outline-none focus:border-accent-blue/60"
                       value={item.unit}
                       onChange={(event) => updatePricingItem(index, { unit: event.target.value })}
                     >
@@ -230,7 +278,7 @@ export function ArtistDashboard() {
                 ))}
               </div>
 
-              <button onClick={savePriceList} className="mt-5 px-4 py-2 bg-white text-black rounded-lg text-sm">
+              <button onClick={savePriceList} className={`mt-5 ${actionButtonClass}`}>
                 保存套餐价格
               </button>
             </div>
@@ -243,18 +291,18 @@ export function ArtistDashboard() {
 
               <div className="grid md:grid-cols-[1fr_1fr_auto] gap-3 mb-5">
                 <input
-                  className="bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-white outline-none"
+                  className="bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-white outline-none focus:border-accent-blue/60"
                   value={workTitle}
                   onChange={(event) => setWorkTitle(event.target.value)}
                   placeholder="作品标题"
                 />
                 <input
-                  className="bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-white outline-none"
+                  className="bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-white outline-none focus:border-accent-blue/60"
                   value={workDescription}
                   onChange={(event) => setWorkDescription(event.target.value)}
                   placeholder="作品说明"
                 />
-                <label className="px-4 py-2 border border-glass-border rounded-lg text-sm text-white cursor-pointer text-center">
+                <label className="px-4 py-2 border border-glass-border rounded-lg text-sm text-white cursor-pointer text-center hover:border-accent-blue/60 hover:bg-accent-blue/10">
                   选择图片
                   <input
                     className="hidden"
@@ -265,11 +313,7 @@ export function ArtistDashboard() {
                 </label>
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
-                <button
-                  onClick={uploadWork}
-                  disabled={uploading}
-                  className="px-4 py-2 bg-white text-black rounded-lg text-sm disabled:opacity-50"
-                >
+                <button onClick={uploadWork} disabled={uploading} className={actionButtonClass}>
                   {uploading ? `上传中 ${Math.round(uploadProgress)}%` : '上传作品'}
                 </button>
                 <span className="text-sm text-text-secondary truncate">{workFile?.name || '未选择图片'}</span>
