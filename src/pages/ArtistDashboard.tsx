@@ -15,6 +15,7 @@ import {
   uploadAvatarImage,
   uploadWorkImage,
 } from '../lib/platformApi';
+import { uploadWorkBatch } from '../lib/batchWorkUpload';
 import type { Collaboration, PricingItem, Work } from '../types/platform';
 
 const EMPTY_PRICING: PricingItem = {
@@ -40,8 +41,9 @@ export function ArtistDashboard() {
   const [collaborations, setCollaborations] = useState<Collaboration[]>([]);
   const [workTitle, setWorkTitle] = useState('');
   const [workDescription, setWorkDescription] = useState('');
-  const [workFile, setWorkFile] = useState<File | null>(null);
+  const [workFiles, setWorkFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadPosition, setUploadPosition] = useState({ current: 0, total: 0 });
   const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState('');
 
@@ -120,44 +122,41 @@ export function ArtistDashboard() {
   };
 
   const uploadWork = async () => {
-    if (!workFile || uploading) {
+    if (workFiles.length === 0 || uploading) {
       setNotice('请先选择图片。');
       return;
     }
 
     setUploading(true);
     setUploadProgress(0);
+    setUploadPosition({ current: 1, total: workFiles.length });
     try {
-      const title = workTitle.trim() || workFile.name.replace(/\.[^.]+$/, '') || '未命名作品';
-      let imageUrl = '';
-      let imagePath = '';
-      let usedInlineFallback = false;
-
-      try {
-        const blob = await uploadWorkImage(workFile, setUploadProgress);
-        imageUrl = blob.url;
-        imagePath = blob.pathname;
-      } catch {
-        imageUrl = await createInlineImageDataUrl(workFile);
-        imagePath = `inline:${Date.now()}-${workFile.name}`;
-        usedInlineFallback = true;
-      }
-
-      const work = await createWork({
-        title,
+      const result = await uploadWorkBatch({
+        files: workFiles,
+        title: workTitle,
         description: workDescription.trim(),
-        imageUrl,
-        imagePath,
+        uploadImage: uploadWorkImage,
+        createInlineImage: createInlineImageDataUrl,
+        createWork,
+        onProgress: ({ current, total, percentage }) => {
+          setUploadPosition({ current, total });
+          setUploadProgress(percentage);
+        },
       });
 
-      setWorks((items) => [work, ...items]);
-      setWorkTitle('');
-      setWorkDescription('');
-      setWorkFile(null);
+      if (result.succeeded.length > 0) {
+        setWorks((items) => [...result.succeeded.reverse(), ...items]);
+        setWorkTitle('');
+        setWorkDescription('');
+      }
+      setWorkFiles([]);
       setUploadProgress(0);
-      setNotice(usedInlineFallback ? '作品已上传，当前使用本地存储模式展示。' : '作品已上传。');
+      setUploadPosition({ current: 0, total: 0 });
+
+      const summary = `${result.succeeded.length} 张上传成功${result.failed ? `，${result.failed} 张上传失败` : ''}。`;
+      setNotice(result.usedInlineFallback ? `${summary} 当前使用本地存储模式展示。` : summary);
     } catch {
-      setNotice('作品上传失败，请稍后再试。');
+      setNotice('批量上传未能开始，请稍后再试。');
     } finally {
       setUploading(false);
     }
@@ -327,15 +326,28 @@ export function ArtistDashboard() {
                     className="hidden"
                     type="file"
                     accept="image/*"
-                    onChange={(event) => setWorkFile(event.target.files?.[0] || null)}
+                    multiple
+                    disabled={uploading}
+                    onChange={(event) => {
+                      setWorkFiles(Array.from(event.target.files || []));
+                      event.target.value = '';
+                    }}
                   />
                 </label>
               </div>
               <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <button onClick={uploadWork} disabled={uploading} className={actionButtonClass}>
-                  {uploading ? `上传中 ${Math.round(uploadProgress)}%` : '上传作品'}
+                  {uploading
+                    ? `正在上传 ${uploadPosition.current}/${uploadPosition.total} · ${Math.round(uploadProgress)}%`
+                    : '上传作品'}
                 </button>
-                <span className="truncate text-sm text-text-secondary">{workFile?.name || '未选择图片'}</span>
+                <span className="truncate text-sm text-text-secondary">
+                  {workFiles.length === 0
+                    ? '未选择图片'
+                    : workFiles.length === 1
+                      ? workFiles[0].name
+                      : `已选择 ${workFiles.length} 张`}
+                </span>
               </div>
 
               {works.length === 0 ? (
