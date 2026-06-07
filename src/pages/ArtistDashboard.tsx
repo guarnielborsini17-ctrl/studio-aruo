@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { ImagePlus, LogOut, Plus, Save, Upload } from 'lucide-react';
 import { PageTransition } from '../components/PageTransition';
+import { WorkShowcaseCard } from '../components/WorkShowcaseCard';
 import { useAuth } from '../contexts/AuthContext';
 import {
+  createInlineImageDataUrl,
   createWork,
   fetchCollaborations,
   fetchPricing,
@@ -54,7 +56,7 @@ export function ArtistDashboard() {
         setPricing(pricingData.length ? pricingData : [{ ...EMPTY_PRICING, name: '单张效果图', price: 300 }]);
         setCollaborations(collaborationData);
       })
-      .catch(() => setNotice('工作台数据暂时无法加载'));
+      .catch(() => setNotice('工作台数据暂时无法加载。'));
   }, [user]);
 
   if (loading) return <div className="text-white">加载中...</div>;
@@ -65,15 +67,15 @@ export function ArtistDashboard() {
     try {
       await updateProfile({ displayName, bio, avatarUrl });
       await refreshUser();
-      setNotice('资料已保存');
+      setNotice('资料已保存。');
     } catch {
-      setNotice('资料保存失败');
+      setNotice('资料保存失败。');
     }
   };
 
   const uploadAvatar = async () => {
     if (!avatarFile || avatarUploading) {
-      setNotice('请先选择头像图片');
+      setNotice('请先选择头像图片。');
       return;
     }
 
@@ -83,9 +85,9 @@ export function ArtistDashboard() {
       const blob = await uploadAvatarImage(avatarFile, setAvatarProgress);
       setAvatarUrl(blob.url);
       setAvatarFile(null);
-      setNotice('头像已上传，记得保存资料');
+      setNotice('头像已上传，记得保存资料。');
     } catch {
-      setNotice('头像上传失败，请检查 Vercel Blob 配置');
+      setNotice('头像上传失败，请检查 Blob 配置。');
     } finally {
       setAvatarUploading(false);
     }
@@ -103,9 +105,9 @@ export function ArtistDashboard() {
 
     try {
       setPricing(await savePricing(validItems));
-      setNotice('套餐价格已保存');
+      setNotice('套餐价格已保存。');
     } catch {
-      setNotice('套餐价格保存失败');
+      setNotice('套餐价格保存失败。');
     }
   };
 
@@ -119,27 +121,42 @@ export function ArtistDashboard() {
 
   const uploadWork = async () => {
     if (!workFile || !workTitle.trim() || uploading) {
-      setNotice('请先选择图片并填写作品标题');
+      setNotice('请先选择图片并填写作品标题。');
       return;
     }
 
     setUploading(true);
     setUploadProgress(0);
     try {
-      const blob = await uploadWorkImage(workFile, setUploadProgress);
+      let imageUrl = '';
+      let imagePath = '';
+      let usedInlineFallback = false;
+
+      try {
+        const blob = await uploadWorkImage(workFile, setUploadProgress);
+        imageUrl = blob.url;
+        imagePath = blob.pathname;
+      } catch {
+        imageUrl = await createInlineImageDataUrl(workFile);
+        imagePath = `inline:${Date.now()}-${workFile.name}`;
+        usedInlineFallback = true;
+      }
+
       const work = await createWork({
         title: workTitle.trim(),
-        description: workDescription,
-        imageUrl: blob.url,
-        imagePath: blob.pathname,
+        description: workDescription.trim(),
+        imageUrl,
+        imagePath,
       });
+
       setWorks((items) => [work, ...items]);
       setWorkTitle('');
       setWorkDescription('');
       setWorkFile(null);
-      setNotice('作品已上传');
+      setUploadProgress(0);
+      setNotice(usedInlineFallback ? '作品已上传，当前使用本地存储模式展示。' : '作品已上传。');
     } catch {
-      setNotice('作品上传失败，请检查 Vercel Blob 配置');
+      setNotice('作品上传失败，请稍后再试。');
     } finally {
       setUploading(false);
     }
@@ -148,10 +165,10 @@ export function ArtistDashboard() {
   return (
     <PageTransition>
       <section className="max-w-6xl mx-auto">
-        <header className="flex flex-col md:flex-row md:items-end justify-between gap-5 border-b border-glass-border pb-8 mb-8">
+        <header className="mb-8 flex flex-col justify-between gap-5 border-b border-glass-border pb-8 md:flex-row md:items-end">
           <div>
-            <p className="text-xs uppercase tracking-[0.35em] text-text-secondary mb-3">Render Artist</p>
-            <h2 className="text-4xl md:text-5xl text-white mb-3">绘图员工作台</h2>
+            <p className="mb-3 text-xs uppercase tracking-[0.35em] text-text-secondary">Render Artist</p>
+            <h2 className="mb-3 text-4xl text-white md:text-5xl">绘图员工作台</h2>
             <p className="text-text-secondary">{user.displayName}，这里用于维护展示资料、套餐价格和合作状态。</p>
           </div>
           <button onClick={logout} className="inline-flex items-center gap-2 text-sm text-text-secondary hover:text-white">
@@ -160,15 +177,15 @@ export function ArtistDashboard() {
           </button>
         </header>
 
-        {notice && <p className="mb-5 text-sm text-accent-blue">{notice}</p>}
+        {notice ? <p className="mb-5 text-sm text-accent-blue">{notice}</p> : null}
 
-        <div className="grid lg:grid-cols-[360px_1fr] gap-8">
+        <div className="grid gap-8 lg:grid-cols-[360px_1fr]">
           <aside className="space-y-5">
-            <div className="border border-glass-border rounded-lg p-5 bg-white/[0.035]">
-              <h3 className="text-lg text-white mb-4">展示资料</h3>
+            <div className="rounded-lg border border-glass-border bg-white/[0.035] p-5">
+              <h3 className="mb-4 text-lg text-white">展示资料</h3>
               <div className="space-y-3">
                 <input
-                  className="w-full bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-white outline-none focus:border-accent-blue/60"
+                  className="w-full rounded-lg border border-glass-border bg-white/5 px-3 py-2 text-white outline-none focus:border-accent-blue/60"
                   value={displayName}
                   onChange={(event) => setDisplayName(event.target.value)}
                   placeholder="展示名"
@@ -201,7 +218,7 @@ export function ArtistDashboard() {
                 </div>
 
                 <textarea
-                  className="w-full min-h-28 bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-white outline-none focus:border-accent-blue/60"
+                  className="min-h-28 w-full rounded-lg border border-glass-border bg-white/5 px-3 py-2 text-white outline-none focus:border-accent-blue/60"
                   value={bio}
                   onChange={(event) => setBio(event.target.value)}
                   placeholder="简介"
@@ -213,8 +230,8 @@ export function ArtistDashboard() {
               </div>
             </div>
 
-            <div className="border border-glass-border rounded-lg p-5 bg-white/[0.035]">
-              <h3 className="text-lg text-white mb-4">合作记录</h3>
+            <div className="rounded-lg border border-glass-border bg-white/[0.035] p-5">
+              <h3 className="mb-4 text-lg text-white">合作记录</h3>
               {collaborations.length === 0 ? (
                 <p className="text-sm text-text-secondary">还没有合作记录。</p>
               ) : (
@@ -222,7 +239,9 @@ export function ArtistDashboard() {
                   {collaborations.map((item) => (
                     <div key={item.id} className="border-b border-glass-border pb-3 last:border-b-0 last:pb-0">
                       <p className="text-white">{item.title}</p>
-                      <p className="text-xs text-text-secondary">设计师：{item.designerName} · {item.status}</p>
+                      <p className="text-xs text-text-secondary">
+                        设计师：{item.designerName} · {item.status}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -231,8 +250,8 @@ export function ArtistDashboard() {
           </aside>
 
           <div className="space-y-8">
-            <div className="border border-glass-border rounded-lg p-5 bg-white/[0.035]">
-              <div className="flex items-center justify-between mb-5">
+            <div className="rounded-lg border border-glass-border bg-white/[0.035] p-5">
+              <div className="mb-5 flex items-center justify-between">
                 <h3 className="text-lg text-white">套餐价格</h3>
                 <button onClick={addPricingItem} className="inline-flex items-center gap-2 text-sm text-accent-blue hover:text-white">
                   <Plus className="w-4 h-4" />
@@ -242,21 +261,21 @@ export function ArtistDashboard() {
 
               <div className="space-y-3">
                 {pricing.map((item, index) => (
-                  <div key={item.id || index} className="grid md:grid-cols-[1fr_1fr_120px_120px] gap-3">
+                  <div key={item.id || index} className="grid gap-3 md:grid-cols-[1fr_1fr_120px_120px]">
                     <input
-                      className="bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-white outline-none focus:border-accent-blue/60"
+                      className="rounded-lg border border-glass-border bg-white/5 px-3 py-2 text-white outline-none focus:border-accent-blue/60"
                       value={item.name}
                       onChange={(event) => updatePricingItem(index, { name: event.target.value })}
                       placeholder="套餐名称"
                     />
                     <input
-                      className="bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-white outline-none focus:border-accent-blue/60"
+                      className="rounded-lg border border-glass-border bg-white/5 px-3 py-2 text-white outline-none focus:border-accent-blue/60"
                       value={item.description || ''}
                       onChange={(event) => updatePricingItem(index, { description: event.target.value })}
                       placeholder="说明"
                     />
                     <input
-                      className="bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-white outline-none focus:border-accent-blue/60"
+                      className="rounded-lg border border-glass-border bg-white/5 px-3 py-2 text-white outline-none focus:border-accent-blue/60"
                       type="number"
                       min={0}
                       value={item.price}
@@ -264,7 +283,7 @@ export function ArtistDashboard() {
                       placeholder="价格"
                     />
                     <select
-                      className="bg-[#1b1b20] border border-glass-border rounded-lg px-3 py-2 text-white outline-none focus:border-accent-blue/60"
+                      className="rounded-lg border border-glass-border bg-[#1b1b20] px-3 py-2 text-white outline-none focus:border-accent-blue/60"
                       value={item.unit === 'item' || item.unit === 'day' ? 'piece' : item.unit}
                       onChange={(event) => updatePricingItem(index, { unit: event.target.value })}
                     >
@@ -282,26 +301,26 @@ export function ArtistDashboard() {
               </button>
             </div>
 
-            <div className="border border-glass-border rounded-lg p-5 bg-white/[0.035]">
-              <div className="flex items-center gap-2 text-white mb-4">
+            <div className="rounded-lg border border-glass-border bg-white/[0.035] p-5">
+              <div className="mb-4 flex items-center gap-2 text-white">
                 <ImagePlus className="w-5 h-5" />
                 <h3 className="text-lg">展示作品</h3>
               </div>
 
-              <div className="grid md:grid-cols-[1fr_1fr_auto] gap-3 mb-5">
+              <div className="mb-5 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
                 <input
-                  className="bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-white outline-none focus:border-accent-blue/60"
+                  className="rounded-lg border border-glass-border bg-white/5 px-3 py-2 text-white outline-none focus:border-accent-blue/60"
                   value={workTitle}
                   onChange={(event) => setWorkTitle(event.target.value)}
                   placeholder="作品标题"
                 />
                 <input
-                  className="bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-white outline-none focus:border-accent-blue/60"
+                  className="rounded-lg border border-glass-border bg-white/5 px-3 py-2 text-white outline-none focus:border-accent-blue/60"
                   value={workDescription}
                   onChange={(event) => setWorkDescription(event.target.value)}
                   placeholder="作品说明"
                 />
-                <label className="px-4 py-2 border border-glass-border rounded-lg text-sm text-white cursor-pointer text-center hover:border-accent-blue/60 hover:bg-accent-blue/10">
+                <label className="cursor-pointer rounded-lg border border-glass-border px-4 py-2 text-center text-sm text-white hover:border-accent-blue/60 hover:bg-accent-blue/10">
                   选择图片
                   <input
                     className="hidden"
@@ -311,25 +330,19 @@ export function ArtistDashboard() {
                   />
                 </label>
               </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
+              <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <button onClick={uploadWork} disabled={uploading} className={actionButtonClass}>
                   {uploading ? `上传中 ${Math.round(uploadProgress)}%` : '上传作品'}
                 </button>
-                <span className="text-sm text-text-secondary truncate">{workFile?.name || '未选择图片'}</span>
+                <span className="truncate text-sm text-text-secondary">{workFile?.name || '未选择图片'}</span>
               </div>
 
               {works.length === 0 ? (
                 <p className="text-sm text-text-secondary">还没有上传作品。</p>
               ) : (
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {works.map((work) => (
-                    <article key={work.id} className="border border-glass-border rounded-lg overflow-hidden">
-                      <img src={work.imageUrl} alt={work.title} className="w-full aspect-[4/3] object-cover" />
-                      <div className="p-3">
-                        <p className="text-white">{work.title}</p>
-                        <p className="text-xs text-text-secondary">{work.description}</p>
-                      </div>
-                    </article>
+                    <WorkShowcaseCard key={work.id} work={work} />
                   ))}
                 </div>
               )}

@@ -174,7 +174,7 @@ export async function createWork(input: {
   title: string;
   description?: string;
   imageUrl: string;
-  imagePath: string;
+  imagePath?: string;
 }): Promise<Work> {
   const data = await platformRequest<{ work: Work }>('/api/works', {
     method: 'POST',
@@ -185,6 +185,53 @@ export async function createWork(input: {
 
 function safeFileName(fileName: string) {
   return fileName.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/-+/g, '-');
+}
+
+export async function createInlineImageDataUrl(
+  file: File,
+  options: {
+    maxSize?: number;
+    quality?: number;
+  } = {}
+): Promise<string> {
+  const { maxSize = 1600, quality = 0.86 } = options;
+
+  const source = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(reader.error || new Error('read_failed'));
+    reader.readAsDataURL(file);
+  });
+
+  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const element = new Image();
+    element.onload = () => resolve(element);
+    element.onerror = () => reject(new Error('image_load_failed'));
+    element.src = source;
+  });
+
+  let width = image.width;
+  let height = image.height;
+
+  if (width > height && width > maxSize) {
+    height = Math.round(height * (maxSize / width));
+    width = maxSize;
+  } else if (height >= width && height > maxSize) {
+    width = Math.round(width * (maxSize / height));
+    height = maxSize;
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d');
+
+  if (!context) {
+    throw new Error('canvas_unavailable');
+  }
+
+  context.drawImage(image, 0, 0, width, height);
+  return canvas.toDataURL('image/jpeg', quality);
 }
 
 export async function uploadWorkImage(

@@ -4,6 +4,7 @@ import { requireMethod, requireUser, sendJson, textValue } from '../_lib/http';
 
 const PUBLIC_BLOB_HOST_SUFFIX = '.public.blob.vercel-storage.com';
 const BLOB_HOST_SUFFIX = '.blob.vercel-storage.com';
+const INLINE_IMAGE_PREFIXES = ['data:image/png;base64,', 'data:image/jpeg;base64,', 'data:image/webp;base64,'] as const;
 
 function queryText(value: string | string[] | undefined) {
   return textValue(Array.isArray(value) ? value[0] : value);
@@ -24,6 +25,15 @@ function isValidBlobImageUrl(value: string) {
   } catch {
     return false;
   }
+}
+
+function isValidInlineImageUrl(value: string) {
+  const lower = value.toLowerCase();
+  return INLINE_IMAGE_PREFIXES.some((prefix) => lower.startsWith(prefix));
+}
+
+export function isAcceptedWorkImageInput(value: string) {
+  return isValidBlobImageUrl(value) || isValidInlineImageUrl(value);
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -56,7 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  if (!imageUrl || !imagePath || !isValidBlobImageUrl(imageUrl)) {
+  if (!imageUrl || !isAcceptedWorkImageInput(imageUrl)) {
     sendJson(res, 400, { error: 'invalid_work_image' });
     return;
   }
