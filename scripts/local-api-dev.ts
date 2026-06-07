@@ -40,7 +40,7 @@ route('get', '/api/artists', 'api/artists/index.ts');
 route('get', '/api/artists/:id', 'api/artists/[id].ts');
 route('get', '/api/works', 'api/works/index.ts');
 route('post', '/api/works', 'api/works/index.ts');
-route('put', '/api/works/:id', 'api/works/[id].ts');
+route('delete', '/api/works/:id', 'api/works/[id].ts');
 route('put', '/api/profile', 'api/profile.ts');
 route('get', '/api/pricing', 'api/pricing.ts');
 route('put', '/api/pricing', 'api/pricing.ts');

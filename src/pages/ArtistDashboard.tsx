@@ -120,14 +120,15 @@ export function ArtistDashboard() {
   };
 
   const uploadWork = async () => {
-    if (!workFile || !workTitle.trim() || uploading) {
-      setNotice('请先选择图片并填写作品标题。');
+    if (!workFile || uploading) {
+      setNotice('请先选择图片。');
       return;
     }
 
     setUploading(true);
     setUploadProgress(0);
     try {
+      const title = workTitle.trim() || workFile.name.replace(/\.[^.]+$/, '') || '未命名作品';
       let imageUrl = '';
       let imagePath = '';
       let usedInlineFallback = false;
@@ -143,7 +144,7 @@ export function ArtistDashboard() {
       }
 
       const work = await createWork({
-        title: workTitle.trim(),
+        title,
         description: workDescription.trim(),
         imageUrl,
         imagePath,
