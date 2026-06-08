@@ -1,24 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { Drumstick, LogOut, Star, Wallet } from 'lucide-react';
+import { LogOut, Star } from 'lucide-react';
 import { PageTransition } from '../components/PageTransition';
 import { useAuth } from '../contexts/AuthContext';
-import {
-  createReview,
-  fetchCollaborations,
-  giveChickenLeg,
-  topUpBalance,
-  updateCollaborationStatus,
-} from '../lib/platformApi';
+import { createReview, fetchCollaborations, updateCollaborationStatus } from '../lib/platformApi';
 import type { Collaboration } from '../types/platform';
 
-type ReviewDraft = { rating: number; content: string; amount: number; message: string };
+type ReviewDraft = { rating: number; content: string };
 
 export function DesignerDashboard() {
-  const { user, loading, logout, refreshUser } = useAuth();
+  const { user, loading, logout } = useAuth();
   const [collaborations, setCollaborations] = useState<Collaboration[]>([]);
   const [drafts, setDrafts] = useState<Record<string, ReviewDraft>>({});
-  const [topUpAmount, setTopUpAmount] = useState(100);
   const [notice, setNotice] = useState('');
 
   const loadCollaborations = async () => {
@@ -35,7 +28,7 @@ export function DesignerDashboard() {
   if (!user) return <Navigate to="/login" replace />;
   if (user.role !== 'designer') return <Navigate to="/dashboard/artist" replace />;
 
-  const draftFor = (id: string) => drafts[id] || { rating: 5, content: '', amount: 20, message: '' };
+  const draftFor = (id: string) => drafts[id] || { rating: 5, content: '' };
   const updateDraft = (id: string, next: Partial<ReviewDraft>) => {
     setDrafts((current) => ({ ...current, [id]: { ...draftFor(id), ...next } }));
   };
@@ -62,29 +55,6 @@ export function DesignerDashboard() {
     }
   };
 
-  const submitChickenLeg = async (collaborationId: string) => {
-    const draft = draftFor(collaborationId);
-    try {
-      await giveChickenLeg({ collaborationId, amount: draft.amount, message: draft.message });
-      updateDraft(collaborationId, { message: '' });
-      await refreshUser();
-      setNotice('鸡腿已送出');
-    } catch (error) {
-      const code = error instanceof Error ? error.message : '';
-      setNotice(code === 'insufficient_balance' ? '余额不足，请先充值' : '加鸡腿失败');
-    }
-  };
-
-  const recharge = async () => {
-    try {
-      await topUpBalance(topUpAmount);
-      await refreshUser();
-      setNotice('充值成功');
-    } catch {
-      setNotice('充值失败');
-    }
-  };
-
   return (
     <PageTransition>
       <section className="max-w-6xl mx-auto">
@@ -92,7 +62,7 @@ export function DesignerDashboard() {
           <div>
             <p className="text-xs uppercase tracking-[0.35em] text-text-secondary mb-3">Designer</p>
             <h2 className="text-4xl md:text-5xl text-white mb-3">设计师工作台</h2>
-            <p className="text-text-secondary">{user.displayName}，你可以挑选绘图员、管理合作、评价并加鸡腿。</p>
+            <p className="text-text-secondary">{user.displayName}，你可以挑选绘图员、管理合作并提交评价。</p>
           </div>
           <button onClick={logout} className="inline-flex items-center gap-2 text-sm text-text-secondary hover:text-white">
             <LogOut className="w-4 h-4" />
@@ -102,24 +72,6 @@ export function DesignerDashboard() {
 
         <div className="grid lg:grid-cols-[320px_1fr] gap-8">
           <aside className="space-y-5">
-            <div className="border border-glass-border rounded-lg p-5 bg-white/[0.035]">
-              <div className="flex items-center gap-2 text-white mb-3">
-                <Wallet className="w-5 h-5" />
-                <h3>账户余额</h3>
-              </div>
-              <p className="text-3xl text-white mb-4">¥{user.balance || 0}</p>
-              <div className="flex gap-2">
-                <input
-                  className="w-full bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-white outline-none"
-                  type="number"
-                  min={1}
-                  value={topUpAmount}
-                  onChange={(event) => setTopUpAmount(Number(event.target.value))}
-                />
-                <button onClick={recharge} className="px-4 bg-white text-black rounded-lg font-medium">充值</button>
-              </div>
-            </div>
-
             <Link to="/artists" className="block border border-glass-border rounded-lg p-5 bg-white/[0.035] hover:border-white/40">
               <h3 className="text-white mb-2">挑选绘图员</h3>
               <p className="text-sm text-text-secondary">进入排行榜，查看作品、价格和设计师评价。</p>
@@ -158,8 +110,7 @@ export function DesignerDashboard() {
                         </div>
                       </div>
 
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div className="space-y-3">
+                      <div className="max-w-2xl space-y-3">
                           <div className="flex items-center gap-2 text-white">
                             <Star className="w-4 h-4" />
                             <span>写评价</span>
@@ -181,30 +132,6 @@ export function DesignerDashboard() {
                           <button onClick={() => submitReview(item.id)} className="px-4 py-2 bg-white text-black rounded-lg text-sm">
                             提交评价
                           </button>
-                        </div>
-
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-2 text-white">
-                            <Drumstick className="w-4 h-4" />
-                            <span>加鸡腿</span>
-                          </div>
-                          <input
-                            className="w-full bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-white outline-none"
-                            type="number"
-                            min={1}
-                            value={draft.amount}
-                            onChange={(event) => updateDraft(item.id, { amount: Number(event.target.value) })}
-                          />
-                          <textarea
-                            className="w-full min-h-24 bg-white/5 border border-glass-border rounded-lg px-3 py-2 text-white outline-none"
-                            value={draft.message}
-                            onChange={(event) => updateDraft(item.id, { message: event.target.value })}
-                            placeholder="给绘图员的一句话"
-                          />
-                          <button onClick={() => submitChickenLeg(item.id)} className="px-4 py-2 bg-white text-black rounded-lg text-sm">
-                            送出鸡腿
-                          </button>
-                        </div>
                       </div>
                     </article>
                   );

@@ -6,8 +6,8 @@ import { cn } from '../lib/utils';
 import type { UserRole } from '../types/platform';
 
 const ROLE_OPTIONS: Array<{ role: UserRole; title: string; desc: string }> = [
-  { role: 'designer', title: '设计师', desc: '挑选绘图员、发起合作、评价和加鸡腿。' },
-  { role: 'artist', title: '绘图员', desc: '上传作品、编辑套餐价格、接收评价和鸡腿。' },
+  { role: 'designer', title: '设计师', desc: '挑选绘图员、发起合作并提交评价。' },
+  { role: 'artist', title: '绘图员', desc: '上传作品、编辑套餐价格并接收评价。' },
 ];
 
 export function Register() {

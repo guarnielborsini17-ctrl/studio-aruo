@@ -54,7 +54,7 @@ export function ArtistProfile() {
 
     try {
       await createCollaboration({ artistId: id, title, note });
-      setMessage('合作已创建，可回到设计师工作台继续评价或加鸡腿。');
+      setMessage('合作已创建，可回到设计师工作台继续管理并提交评价。');
       setNote('');
     } catch {
       setMessage('合作创建失败，请稍后再试。');
