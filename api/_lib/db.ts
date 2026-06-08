@@ -24,6 +24,8 @@ export async function setupSchema() {
     )
   `;
 
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS pricing_note TEXT NOT NULL DEFAULT ''`;
+
   await sql`
     CREATE TABLE IF NOT EXISTS works (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -180,6 +182,7 @@ type UserRow = {
   display_name: string;
   avatar_url?: string | null;
   bio?: string | null;
+  pricing_note?: string | null;
   balance?: number | string | null;
   created_at?: string;
   updated_at?: string;
@@ -204,6 +207,7 @@ export function mapUser(row: UserRow) {
     displayName: row.display_name,
     avatarUrl: row.avatar_url || '',
     bio: row.bio || '',
+    pricingNote: row.pricing_note || '',
     balance: Number(row.balance || 0),
     createdAt: row.created_at || '',
     updatedAt: row.updated_at || '',

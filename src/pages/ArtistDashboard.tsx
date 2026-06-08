@@ -33,6 +33,7 @@ export function ArtistDashboard() {
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [pricingNote, setPricingNote] = useState('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarProgress, setAvatarProgress] = useState(0);
@@ -52,6 +53,7 @@ export function ArtistDashboard() {
     setDisplayName(user.displayName);
     setBio(user.bio || '');
     setAvatarUrl(user.avatarUrl || '');
+    setPricingNote(user.pricingNote || '');
     Promise.all([fetchWorks(user.id), fetchPricing(user.id), fetchCollaborations()])
       .then(([workData, pricingData, collaborationData]) => {
         setWorks(workData);
@@ -67,7 +69,7 @@ export function ArtistDashboard() {
 
   const saveProfile = async () => {
     try {
-      await updateProfile({ displayName, bio, avatarUrl });
+      await updateProfile({ displayName, bio, avatarUrl, pricingNote });
       await refreshUser();
       setNotice('资料已保存。');
     } catch {
@@ -107,6 +109,8 @@ export function ArtistDashboard() {
 
     try {
       setPricing(await savePricing(validItems));
+      await updateProfile({ displayName, bio, avatarUrl, pricingNote });
+      await refreshUser();
       setNotice('套餐价格已保存。');
     } catch {
       setNotice('套餐价格保存失败。');
@@ -295,6 +299,17 @@ export function ArtistDashboard() {
                   </div>
                 ))}
               </div>
+
+              <label className="mt-5 block">
+                <span className="mb-2 block text-sm text-text-secondary">价格说明</span>
+                <textarea
+                  className="min-h-24 w-full resize-y rounded-lg border border-glass-border bg-white/5 px-3 py-2 text-white outline-none focus:border-accent-blue/60"
+                  value={pricingNote}
+                  onChange={(event) => setPricingNote(event.target.value)}
+                  placeholder="例如：交付周期、修改次数、急单费用等"
+                  maxLength={1000}
+                />
+              </label>
 
               <button onClick={savePriceList} className={`mt-5 ${actionButtonClass}`}>
                 保存套餐价格

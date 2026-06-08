@@ -111,6 +111,7 @@ function normalizeUser(user: PlatformUser): PlatformUser {
     ...user,
     avatarUrl: user.avatarUrl ?? '',
     bio: user.bio ?? '',
+    pricingNote: user.pricingNote ?? '',
     balance: user.balance ?? 0,
   };
 }
@@ -316,6 +317,7 @@ export async function updateProfile(input: {
   displayName: string;
   bio?: string;
   avatarUrl?: string;
+  pricingNote?: string;
 }): Promise<PlatformUser> {
   const data = await platformRequest<{ user: PlatformUser }>('/api/profile', {
     method: 'PUT',

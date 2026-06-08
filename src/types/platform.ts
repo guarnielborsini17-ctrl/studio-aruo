@@ -7,6 +7,7 @@ export type PlatformUser = {
   displayName: string;
   avatarUrl?: string;
   bio?: string;
+  pricingNote?: string;
   balance?: number;
   createdAt?: string;
   updatedAt?: string;

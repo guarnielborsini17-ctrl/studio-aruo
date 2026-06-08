@@ -15,6 +15,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const displayName = textValue(req.body?.displayName);
   const bio = textValue(req.body?.bio);
   const avatarUrl = textValue(req.body?.avatarUrl);
+  const pricingNote = textValue(req.body?.pricingNote);
 
   if (!displayName) {
     sendJson(res, 400, { error: 'display_name_required' });
@@ -26,6 +27,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     SET display_name = ${displayName},
         bio = ${bio},
         avatar_url = ${avatarUrl},
+        pricing_note = ${pricingNote},
         updated_at = now()
     WHERE id = ${user.id}
     RETURNING *

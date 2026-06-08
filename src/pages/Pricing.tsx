@@ -131,16 +131,11 @@ export function Pricing() {
         <h2 className="text-4xl md:text-5xl text-white mb-3">价格参考</h2>
         <div className="mt-6 flex items-start gap-3 p-4 bg-white/[0.035] border border-glass-border rounded-lg max-w-4xl">
           <Info className="w-5 h-5 text-text-secondary shrink-0 mt-0.5" />
-          <div className="text-sm text-text-secondary leading-relaxed space-y-3">
-            <p>
-              {showingArtistPricing
-                ? '这里正在显示你在绘图员工作台保存的自定义套餐价格。'
-                : '这里显示公共基础空间表现价格。绘图员登录后，会优先显示自己保存的套餐价格。'}
-            </p>
-            <p className="text-accent-blue/80">
-              设计师可以在绘图员详情页查看每位绘图员自己的套餐，并发起合作。
-            </p>
-          </div>
+          <p className="whitespace-pre-line text-sm leading-relaxed text-text-secondary">
+            {user?.role === 'artist'
+              ? user.pricingNote?.trim() || '可在绘图员工作台填写价格说明。'
+              : '这里显示公共基础空间表现价格。'}
+          </p>
         </div>
       </header>
 
