@@ -50,4 +50,12 @@ assert.equal(
   dashboardSource.includes('updateProfile({ isBusy, availableDate })'),
   true
 );
+
+const appSource = await readFile('src/App.tsx', 'utf8');
+assert.equal(appSource.includes("localStorage.getItem('aruo_status')"), false);
+assert.equal(appSource.includes("localStorage.setItem('aruo_status'"), false);
+assert.equal(appSource.includes('StatusContext.Provider'), false);
+assert.equal(appSource.includes("user?.role === 'artist'"), true);
+assert.equal(appSource.includes('user.isBusy'), true);
+assert.equal(appSource.includes('user.availableDate'), true);
 console.log('artist availability mapping assertions passed');

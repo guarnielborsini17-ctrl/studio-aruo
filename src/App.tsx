@@ -3,7 +3,7 @@ import { HashRouter as Router, Routes, Route, Link, Navigate, useLocation } from
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
 import { apiGet, apiPost, apiPut } from './lib/api';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Gallery } from './pages/Gallery';
 import { Pricing } from './pages/Pricing';
 import { Guide } from './pages/Guide';
@@ -61,24 +61,6 @@ interface KanbanContextType {
 export const KanbanContext = createContext<KanbanContextType>({
   kanban: INITIAL_KANBAN,
   setKanban: () => {},
-});
-
-// --- Status Context ---
-const INITIAL_STATUS = {
-  isBusy: true,
-  availableDate: '2026-05-01',
-};
-
-export type StatusType = typeof INITIAL_STATUS;
-
-interface StatusContextType {
-  status: StatusType;
-  setStatus: React.Dispatch<React.SetStateAction<StatusType>>;
-}
-
-export const StatusContext = createContext<StatusContextType>({
-  status: INITIAL_STATUS,
-  setStatus: () => {},
 });
 
 // --- Submissions Context ---
@@ -245,11 +227,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     return saved ? JSON.parse(saved) : INITIAL_KANBAN;
   });
 
-  const [status, setStatus] = useState<StatusType>(() => {
-    const saved = localStorage.getItem('aruo_status');
-    return saved ? JSON.parse(saved) : INITIAL_STATUS;
-  });
-
   const [submissions, setSubmissions] = useState<SubmissionType[]>(() => {
     const saved = localStorage.getItem('aruo_submissions');
     return saved ? JSON.parse(saved) : [];
@@ -406,10 +383,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }, [kanban]);
 
   useEffect(() => {
-    localStorage.setItem('aruo_status', JSON.stringify(status));
-  }, [status]);
-
-  useEffect(() => {
     localStorage.setItem('aruo_submissions', JSON.stringify(submissions));
   }, [submissions]);
 
@@ -453,7 +426,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const projValue = useMemo(() => ({ projects, setProjects }), [projects]);
   const kanbanValue = useMemo(() => ({ kanban, setKanban }), [kanban]);
-  const statusValue = useMemo(() => ({ status, setStatus }), [status]);
   const submissionsValue = useMemo(() => ({ submissions, setSubmissions }), [submissions]);
   const workspaceValue = useMemo(() => ({ workspace, setWorkspace }), [workspace]);
   const pricingValue = useMemo(() => ({ pricing, setPricing }), [pricing]);
@@ -462,17 +434,15 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   return (
     <ProjectContext.Provider value={projValue}>
       <KanbanContext.Provider value={kanbanValue}>
-        <StatusContext.Provider value={statusValue}>
-          <SubmissionsContext.Provider value={submissionsValue}>
-            <WorkspaceContext.Provider value={workspaceValue}>
-              <PricingContext.Provider value={pricingValue}>
-                <ChatContext.Provider value={chatValue}>
-                  {children}
-                </ChatContext.Provider>
-              </PricingContext.Provider>
-            </WorkspaceContext.Provider>
-          </SubmissionsContext.Provider>
-        </StatusContext.Provider>
+        <SubmissionsContext.Provider value={submissionsValue}>
+          <WorkspaceContext.Provider value={workspaceValue}>
+            <PricingContext.Provider value={pricingValue}>
+              <ChatContext.Provider value={chatValue}>
+                {children}
+              </ChatContext.Provider>
+            </PricingContext.Provider>
+          </WorkspaceContext.Provider>
+        </SubmissionsContext.Provider>
       </KanbanContext.Provider>
     </ProjectContext.Provider>
   );
@@ -481,7 +451,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
 function Navigation() {
   const location = useLocation();
-  const { status } = useContext(StatusContext);
+  const { user } = useAuth();
+  const showArtistStatus = user?.role === 'artist';
 
   const links = [
     { href: '/', label: '作品库', number: '01' },
@@ -498,17 +469,18 @@ function Navigation() {
           <p className="text-[10px] uppercase tracking-widest text-text-secondary">协作系统 v1.0</p>
         </div>
 
-        {/* Global Status Pill next to Logo */}
-        <div className="hidden md:flex items-center ml-8 h-10 px-5 bg-[rgba(255,255,255,0.02)] border border-glass-border rounded-full shadow-lg backdrop-blur-md transition-all hover:bg-[rgba(255,255,255,0.04)]">
-          <div className="flex items-center gap-2 mr-4 pr-4 border-r border-glass-border">
-            <div className={`w-1.5 h-1.5 rounded-full ${status.isBusy ? 'bg-accent-orange shadow-[0_0_8px_rgba(255,107,74,0.6)]' : 'bg-status-green shadow-[0_0_8px_rgba(74,255,148,0.6)]'}`} />
-            <span className="text-xs font-medium text-white">{status.isBusy ? '繁忙状态 / Busy' : '空闲可接单 / Available'}</span>
+        {showArtistStatus ? (
+          <div className="hidden md:flex items-center ml-8 h-10 px-5 bg-[rgba(255,255,255,0.02)] border border-glass-border rounded-full shadow-lg backdrop-blur-md transition-all hover:bg-[rgba(255,255,255,0.04)]">
+            <div className="flex items-center gap-2 mr-4 pr-4 border-r border-glass-border">
+              <div className={`w-1.5 h-1.5 rounded-full ${user.isBusy ? 'bg-accent-orange shadow-[0_0_8px_rgba(255,107,74,0.6)]' : 'bg-status-green shadow-[0_0_8px_rgba(74,255,148,0.6)]'}`} />
+              <span className="text-xs font-medium text-white">{user.isBusy ? '繁忙状态 / Busy' : '空闲可接单 / Available'}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] text-text-secondary uppercase tracking-widest">最早可排期日期</span>
+              <span className="text-xs font-mono text-white tracking-wider">{user.availableDate}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-[10px] text-text-secondary uppercase tracking-widest">最早可排期日期</span>
-            <span className="text-xs font-mono text-white tracking-wider">{status.availableDate}</span>
-          </div>
-        </div>
+        ) : null}
       </div>
 
       <div className="flex gap-8 pointer-events-auto mix-blend-difference">
