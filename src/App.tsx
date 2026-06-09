@@ -10,10 +10,8 @@ import { Guide } from './pages/Guide';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
-import { DesignerDashboard } from './pages/DesignerDashboard';
 import { ArtistDashboard } from './pages/ArtistDashboard';
-import { ArtistRanking } from './pages/ArtistRanking';
-import { ArtistProfile } from './pages/ArtistProfile';
+import { FeatureUnavailable } from './pages/FeatureUnavailable';
 
 // --- Context for persisting Gallery state across route changes ---
 const INITIAL_PROJECTS = [
@@ -488,9 +486,8 @@ function Navigation() {
   const links = [
     { href: '/', label: '作品库', number: '01' },
     { href: '/pricing', label: '价格参考', number: '02' },
-    { href: '/artists', label: '绘图员排行', number: '03' },
-    { href: '/guide', label: '服务与手册', number: '04' },
-    { href: '/dashboard', label: '登录 / 工作台', number: '05' },
+    { href: '/guide', label: '服务与手册', number: '03' },
+    { href: '/dashboard', label: '登录 / 工作台', number: '04' },
   ];
 
   return (
@@ -551,14 +548,15 @@ function AnimatedRoutes() {
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Gallery />} />
         <Route path="/pricing" element={<Pricing />} />
-        <Route path="/artists" element={<ArtistRanking />} />
-        <Route path="/artists/:id" element={<ArtistProfile />} />
+        <Route path="/artists" element={<FeatureUnavailable />} />
+        <Route path="/artists/:id" element={<FeatureUnavailable />} />
         <Route path="/guide" element={<Guide />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/dashboard/designer" element={<DesignerDashboard />} />
+        <Route path="/dashboard/designer" element={<FeatureUnavailable />} />
         <Route path="/dashboard/artist" element={<ArtistDashboard />} />
+        <Route path="/coming-soon" element={<FeatureUnavailable />} />
         <Route path="/submit" element={<Navigate to="/dashboard" replace />} />
         <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
       </Routes>

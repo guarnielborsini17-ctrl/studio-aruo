@@ -180,10 +180,10 @@ export function Pricing() {
       )}
 
       <Link
-        to={user?.role === 'artist' ? '/dashboard/artist' : '/artists'}
+        to={user?.role === 'artist' ? '/dashboard/artist' : '/login'}
         className="inline-block mt-8 rounded-lg border border-glass-border bg-white/[0.035] px-4 py-2 text-sm text-white hover:border-accent-blue/60 hover:bg-accent-blue/10"
       >
-        {user?.role === 'artist' ? '返回工作台修改套餐' : '查看绘图员套餐'}
+        {user?.role === 'artist' ? '返回工作台修改套餐' : '登录绘图员账号'}
       </Link>
     </PageTransition>
   );

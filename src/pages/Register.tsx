@@ -2,18 +2,10 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { PageTransition } from '../components/PageTransition';
 import { useAuth } from '../contexts/AuthContext';
-import { cn } from '../lib/utils';
-import type { UserRole } from '../types/platform';
-
-const ROLE_OPTIONS: Array<{ role: UserRole; title: string; desc: string }> = [
-  { role: 'designer', title: '设计师', desc: '挑选绘图员、发起合作并提交评价。' },
-  { role: 'artist', title: '绘图员', desc: '上传作品、编辑套餐价格并接收评价。' },
-];
 
 export function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
-  const [role, setRole] = useState<UserRole>('designer');
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
@@ -26,7 +18,7 @@ export function Register() {
     setError('');
     setSubmitting(true);
     try {
-      await register({ username, displayName, password, role });
+      await register({ username, displayName, password, role: 'artist' });
       navigate('/dashboard');
     } catch (err) {
       const code = err instanceof Error ? err.message : '';
@@ -40,29 +32,10 @@ export function Register() {
     <PageTransition>
       <section className="max-w-2xl mx-auto pt-12">
         <p className="text-xs uppercase tracking-[0.35em] text-text-secondary mb-3">Register</p>
-        <h2 className="text-4xl text-white mb-3">创建账号</h2>
-        <p className="text-text-secondary mb-8">选择你在平台里的身份。第一期注册后暂不开放修改。</p>
+        <h2 className="text-4xl text-white mb-3">创建绘图员账号</h2>
+        <p className="text-text-secondary mb-8">注册后即可上传作品、维护展示资料和套餐价格。</p>
 
         <form onSubmit={submit} className="space-y-5">
-          <div className="grid md:grid-cols-2 gap-3">
-            {ROLE_OPTIONS.map((item) => (
-              <button
-                type="button"
-                key={item.role}
-                onClick={() => setRole(item.role)}
-                className={cn(
-                  'text-left border rounded-lg p-4 transition-colors',
-                  role === item.role
-                    ? 'bg-white text-black border-white'
-                    : 'bg-white/5 text-white border-glass-border hover:border-white/50'
-                )}
-              >
-                <strong>{item.title}</strong>
-                <span className="block text-sm opacity-70 mt-2">{item.desc}</span>
-              </button>
-            ))}
-          </div>
-
           <input
             className="w-full bg-white/5 border border-glass-border rounded-lg px-4 py-3 text-white outline-none focus:border-white/60"
             value={username}

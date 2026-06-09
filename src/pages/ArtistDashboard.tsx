@@ -7,7 +7,6 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   createInlineImageDataUrl,
   createWork,
-  fetchCollaborations,
   fetchPricing,
   fetchWorks,
   savePricing,
@@ -16,7 +15,7 @@ import {
   uploadWorkImage,
 } from '../lib/platformApi';
 import { uploadWorkBatch } from '../lib/batchWorkUpload';
-import type { Collaboration, PricingItem, Work } from '../types/platform';
+import type { PricingItem, Work } from '../types/platform';
 
 const EMPTY_PRICING: PricingItem = {
   name: '',
@@ -39,7 +38,6 @@ export function ArtistDashboard() {
   const [avatarProgress, setAvatarProgress] = useState(0);
   const [works, setWorks] = useState<Work[]>([]);
   const [pricing, setPricing] = useState<PricingItem[]>([]);
-  const [collaborations, setCollaborations] = useState<Collaboration[]>([]);
   const [workTitle, setWorkTitle] = useState('');
   const [workDescription, setWorkDescription] = useState('');
   const [workFiles, setWorkFiles] = useState<File[]>([]);
@@ -54,18 +52,17 @@ export function ArtistDashboard() {
     setBio(user.bio || '');
     setAvatarUrl(user.avatarUrl || '');
     setPricingNote(user.pricingNote || '');
-    Promise.all([fetchWorks(user.id), fetchPricing(user.id), fetchCollaborations()])
-      .then(([workData, pricingData, collaborationData]) => {
+    Promise.all([fetchWorks(user.id), fetchPricing(user.id)])
+      .then(([workData, pricingData]) => {
         setWorks(workData);
         setPricing(pricingData.length ? pricingData : [{ ...EMPTY_PRICING, name: '单张效果图', price: 300 }]);
-        setCollaborations(collaborationData);
       })
       .catch(() => setNotice('工作台数据暂时无法加载。'));
   }, [user]);
 
   if (loading) return <div className="text-white">加载中...</div>;
   if (!user) return <Navigate to="/login" replace />;
-  if (user.role !== 'artist') return <Navigate to="/dashboard/designer" replace />;
+  if (user.role !== 'artist') return <Navigate to="/coming-soon" replace />;
 
   const saveProfile = async () => {
     try {
@@ -234,23 +231,6 @@ export function ArtistDashboard() {
               </div>
             </div>
 
-            <div className="rounded-lg border border-glass-border bg-white/[0.035] p-5">
-              <h3 className="mb-4 text-lg text-white">合作记录</h3>
-              {collaborations.length === 0 ? (
-                <p className="text-sm text-text-secondary">还没有合作记录。</p>
-              ) : (
-                <div className="space-y-3">
-                  {collaborations.map((item) => (
-                    <div key={item.id} className="border-b border-glass-border pb-3 last:border-b-0 last:pb-0">
-                      <p className="text-white">{item.title}</p>
-                      <p className="text-xs text-text-secondary">
-                        设计师：{item.designerName} · {item.status}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
           </aside>
 
           <div className="space-y-8">

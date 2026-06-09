@@ -1,28 +1,23 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Images, Star, Users } from 'lucide-react';
+import { BadgeCheck, Images, UserRound } from 'lucide-react';
 import { PageTransition } from '../components/PageTransition';
 
 const STEPS = [
   {
-    title: '注册角色账号',
-    icon: Users,
-    content: '设计师和绘图员使用各自独立账号登录。注册时选择身份后，会进入对应工作台。',
+    title: '注册绘图员账号',
+    icon: UserRound,
+    content: '第一版开放绘图员注册。登录后会直接进入绘图员工作台。',
   },
   {
-    title: '设计师挑选绘图员',
-    icon: Star,
-    content: '设计师可以在绘图员排行榜查看作品、价格和合作评价，再发起合作。',
-  },
-  {
-    title: '绘图员维护展示资料',
+    title: '维护展示资料',
     icon: Images,
-    content: '绘图员可以在工作台编辑简介、套餐价格，并通过 Vercel Blob 上传展示作品。',
+    content: '在工作台编辑头像、简介、套餐价格和价格说明，并上传自己的展示作品。',
   },
   {
-    title: '合作后评价',
-    icon: FileText,
-    content: '合作创建并完成后，设计师可以在工作台为绘图员提交评分和文字评价。',
+    title: '公开展示作品',
+    icon: BadgeCheck,
+    content: '保存后的套餐会同步到价格参考页，上传作品会展示在公开作品库中。',
   },
 ];
 
@@ -33,7 +28,7 @@ export function Guide() {
         <p className="text-xs uppercase tracking-[0.35em] text-text-secondary mb-3">Guide</p>
         <h2 className="text-4xl md:text-5xl text-white mb-3">服务与手册</h2>
         <p className="text-text-secondary max-w-2xl">
-          Studio Aruo 现在是一个面向设计师与绘图员的协作展示平台，第一期演示版重点跑通账号、作品、排行榜和合作评价。
+          Studio Aruo 第一版专注于绘图员展示能力，先跑通账号、资料、套餐价格和作品上传。
         </p>
       </header>
 
@@ -54,10 +49,7 @@ export function Guide() {
 
       <div className="mt-8 flex flex-wrap gap-3">
         <Link to="/register" className="px-4 py-2 bg-white text-black rounded-lg text-sm font-medium">
-          创建账号
-        </Link>
-        <Link to="/artists" className="px-4 py-2 border border-glass-border rounded-lg text-sm text-white">
-          查看排行榜
+          创建绘图员账号
         </Link>
       </div>
     </PageTransition>

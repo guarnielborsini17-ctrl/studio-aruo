@@ -13,5 +13,5 @@ export function Dashboard() {
     return <Navigate to="/login" replace />;
   }
 
-  return <Navigate to={user.role === 'designer' ? '/dashboard/designer' : '/dashboard/artist'} replace />;
+  return <Navigate to={user.role === 'designer' ? '/coming-soon' : '/dashboard/artist'} replace />;
 }
