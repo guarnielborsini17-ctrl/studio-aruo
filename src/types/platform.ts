@@ -9,6 +9,8 @@ export type PlatformUser = {
   bio?: string;
   pricingNote?: string;
   balance?: number;
+  isBusy?: boolean;
+  availableDate?: string;
   createdAt?: string;
   updatedAt?: string;
 };

@@ -113,6 +113,8 @@ function normalizeUser(user: PlatformUser): PlatformUser {
     bio: user.bio ?? '',
     pricingNote: user.pricingNote ?? '',
     balance: user.balance ?? 0,
+    isBusy: user.isBusy ?? true,
+    availableDate: user.availableDate ?? '',
   };
 }
 

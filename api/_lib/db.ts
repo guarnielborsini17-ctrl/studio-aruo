@@ -25,6 +25,8 @@ export async function setupSchema() {
   `;
 
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS pricing_note TEXT NOT NULL DEFAULT ''`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_busy BOOLEAN NOT NULL DEFAULT true`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS available_date DATE NOT NULL DEFAULT CURRENT_DATE`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS works (
@@ -183,6 +185,8 @@ type UserRow = {
   avatar_url?: string | null;
   bio?: string | null;
   pricing_note?: string | null;
+  is_busy?: boolean | null;
+  available_date?: string | Date | null;
   balance?: number | string | null;
   created_at?: string;
   updated_at?: string;
@@ -199,6 +203,12 @@ type WorkRow = {
   updated_at?: string;
 };
 
+function mapDateOnly(value: string | Date | null | undefined) {
+  if (!value) return '';
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return String(value).slice(0, 10);
+}
+
 export function mapUser(row: UserRow) {
   return {
     id: row.id,
@@ -209,6 +219,8 @@ export function mapUser(row: UserRow) {
     bio: row.bio || '',
     pricingNote: row.pricing_note || '',
     balance: Number(row.balance || 0),
+    isBusy: row.is_busy ?? true,
+    availableDate: mapDateOnly(row.available_date),
     createdAt: row.created_at || '',
     updatedAt: row.updated_at || '',
   };
