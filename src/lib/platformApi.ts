@@ -316,10 +316,12 @@ export async function updateCollaborationStatus(
 }
 
 export async function updateProfile(input: {
-  displayName: string;
+  displayName?: string;
   bio?: string;
   avatarUrl?: string;
   pricingNote?: string;
+  isBusy?: boolean;
+  availableDate?: string;
 }): Promise<PlatformUser> {
   const data = await platformRequest<{ user: PlatformUser }>('/api/profile', {
     method: 'PUT',

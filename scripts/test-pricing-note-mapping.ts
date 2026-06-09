@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict';
-import { mapUser } from '../api/_lib/db';
+import dotenv from 'dotenv';
+
+dotenv.config({ path: '.env.local' });
+
+const { mapUser } = await import('../api/_lib/db');
 
 const mapped = mapUser({
   id: 'artist-1',

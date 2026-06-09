@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { mapUser, sql } from './_lib/db';
-import { requireMethod, requireUser, sendJson, textValue } from './_lib/http';
+import { requireMethod, requireUser, sendJson } from './_lib/http';
+import { parseProfileUpdate } from './_lib/profileInput';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!requireMethod(req, res, ['PUT'])) {
@@ -12,22 +13,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const displayName = textValue(req.body?.displayName);
-  const bio = textValue(req.body?.bio);
-  const avatarUrl = textValue(req.body?.avatarUrl);
-  const pricingNote = textValue(req.body?.pricingNote);
+  let input: ReturnType<typeof parseProfileUpdate>;
+  try {
+    input = parseProfileUpdate(req.body);
+  } catch (error) {
+    sendJson(res, 400, {
+      error: error instanceof Error ? error.message : 'invalid_profile_update',
+    });
+    return;
+  }
 
-  if (!displayName) {
+  if (input.hasDisplayName && !input.displayName) {
     sendJson(res, 400, { error: 'display_name_required' });
+    return;
+  }
+
+  if ((input.hasIsBusy || input.hasAvailableDate) && user.role !== 'artist') {
+    sendJson(res, 403, { error: 'wrong_role' });
     return;
   }
 
   const rows = await sql`
     UPDATE users
-    SET display_name = ${displayName},
-        bio = ${bio},
-        avatar_url = ${avatarUrl},
-        pricing_note = ${pricingNote},
+    SET display_name = CASE
+          WHEN ${input.hasDisplayName} THEN ${input.displayName}
+          ELSE display_name
+        END,
+        bio = CASE WHEN ${input.hasBio} THEN ${input.bio} ELSE bio END,
+        avatar_url = CASE
+          WHEN ${input.hasAvatarUrl} THEN ${input.avatarUrl}
+          ELSE avatar_url
+        END,
+        pricing_note = CASE
+          WHEN ${input.hasPricingNote} THEN ${input.pricingNote}
+          ELSE pricing_note
+        END,
+        is_busy = CASE WHEN ${input.hasIsBusy} THEN ${input.isBusy} ELSE is_busy END,
+        available_date = CASE
+          WHEN ${input.hasAvailableDate} THEN ${input.availableDate}::date
+          ELSE available_date
+        END,
         updated_at = now()
     WHERE id = ${user.id}
     RETURNING *
