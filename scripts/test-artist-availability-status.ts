@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import dotenv from 'dotenv';
+import { readFile } from 'node:fs/promises';
 
 dotenv.config({ path: '.env.local' });
 
@@ -39,5 +40,14 @@ assert.throws(
 assert.throws(
   () => parseProfileUpdate({ isBusy: 'false' }),
   /invalid_is_busy/
+);
+
+const dashboardSource = await readFile('src/pages/ArtistDashboard.tsx', 'utf8');
+assert.equal(dashboardSource.includes('接单状态'), true);
+assert.equal(dashboardSource.includes('保存接单状态'), true);
+assert.equal(dashboardSource.includes('type="date"'), true);
+assert.equal(
+  dashboardSource.includes('updateProfile({ isBusy, availableDate })'),
+  true
 );
 console.log('artist availability mapping assertions passed');

@@ -15,6 +15,7 @@ import {
   uploadWorkImage,
 } from '../lib/platformApi';
 import { uploadWorkBatch } from '../lib/batchWorkUpload';
+import { cn } from '../lib/utils';
 import type { PricingItem, Work } from '../types/platform';
 
 const EMPTY_PRICING: PricingItem = {
@@ -33,6 +34,9 @@ export function ArtistDashboard() {
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [pricingNote, setPricingNote] = useState('');
+  const [isBusy, setIsBusy] = useState(true);
+  const [availableDate, setAvailableDate] = useState('');
+  const [savingAvailability, setSavingAvailability] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarProgress, setAvatarProgress] = useState(0);
@@ -52,6 +56,8 @@ export function ArtistDashboard() {
     setBio(user.bio || '');
     setAvatarUrl(user.avatarUrl || '');
     setPricingNote(user.pricingNote || '');
+    setIsBusy(user.isBusy ?? true);
+    setAvailableDate(user.availableDate || new Date().toISOString().slice(0, 10));
     Promise.all([fetchWorks(user.id), fetchPricing(user.id)])
       .then(([workData, pricingData]) => {
         setWorks(workData);
@@ -111,6 +117,24 @@ export function ArtistDashboard() {
       setNotice('套餐价格已保存。');
     } catch {
       setNotice('套餐价格保存失败。');
+    }
+  };
+
+  const saveAvailability = async () => {
+    if (!availableDate) {
+      setNotice('请选择最早可排期日期。');
+      return;
+    }
+
+    setSavingAvailability(true);
+    try {
+      await updateProfile({ isBusy, availableDate });
+      await refreshUser();
+      setNotice('接单状态已保存。');
+    } catch {
+      setNotice('接单状态保存失败。');
+    } finally {
+      setSavingAvailability(false);
     }
   };
 
@@ -227,6 +251,57 @@ export function ArtistDashboard() {
                 <button onClick={saveProfile} className={actionButtonClass}>
                   <Save className="w-4 h-4" />
                   保存资料
+                </button>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-glass-border bg-white/[0.035] p-5">
+              <h3 className="mb-4 text-lg text-white">接单状态</h3>
+              <div className="space-y-4">
+                <div>
+                  <span className="mb-2 block text-sm text-text-secondary">当前状态</span>
+                  <div className="grid grid-cols-2 rounded-lg border border-glass-border bg-white/5 p-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsBusy(true)}
+                      className={cn(
+                        'rounded-md px-3 py-2 text-sm transition-colors',
+                        isBusy ? 'bg-white text-black' : 'text-text-secondary hover:text-white'
+                      )}
+                    >
+                      繁忙
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsBusy(false)}
+                      className={cn(
+                        'rounded-md px-3 py-2 text-sm transition-colors',
+                        !isBusy ? 'bg-white text-black' : 'text-text-secondary hover:text-white'
+                      )}
+                    >
+                      空闲可接单
+                    </button>
+                  </div>
+                </div>
+
+                <label className="block">
+                  <span className="mb-2 block text-sm text-text-secondary">最早可排期日期</span>
+                  <input
+                    type="date"
+                    value={availableDate}
+                    onChange={(event) => setAvailableDate(event.target.value)}
+                    className="w-full rounded-lg border border-glass-border bg-white/5 px-3 py-2 text-white outline-none focus:border-accent-blue/60"
+                  />
+                </label>
+
+                <button
+                  type="button"
+                  onClick={saveAvailability}
+                  disabled={savingAvailability}
+                  className={actionButtonClass}
+                >
+                  <Save className="h-4 w-4" />
+                  {savingAvailability ? '正在保存...' : '保存接单状态'}
                 </button>
               </div>
             </div>
