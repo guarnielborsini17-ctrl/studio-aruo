@@ -19,6 +19,16 @@ const mapped = mapUser({
 assert.equal(mapped.isBusy, false);
 assert.equal(mapped.availableDate, '2026-06-20');
 
+const mappedDateObject = mapUser({
+  id: 'artist-2',
+  username: 'artist-date',
+  role: 'artist',
+  display_name: 'Artist Date',
+  available_date: new Date(2026, 5, 9),
+});
+
+assert.equal(mappedDateObject.availableDate, '2026-06-09');
+
 assert.deepEqual(parseProfileUpdate({ isBusy: false, availableDate: '2026-06-20' }), {
   hasDisplayName: false,
   displayName: '',
