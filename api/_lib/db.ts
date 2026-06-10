@@ -74,7 +74,7 @@ export async function setupSchema() {
       ALTER TABLE collaborations
         ADD CONSTRAINT collaborations_id_designer_artist_key UNIQUE (id, designer_id, artist_id);
     EXCEPTION
-      WHEN duplicate_object THEN NULL;
+      WHEN duplicate_object OR duplicate_table THEN NULL;
     END $$;
   `;
 
