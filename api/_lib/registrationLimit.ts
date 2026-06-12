@@ -1,5 +1,3 @@
-import { sql } from './db';
-
 const DEFAULT_BETA_USER_LIMIT = 10;
 
 export type RegistrationStatus = {
@@ -39,6 +37,7 @@ export function toRegistrationStatus(
 }
 
 export async function readRegistrationStatus(): Promise<RegistrationStatus> {
+  const { sql } = await import('./db');
   const rows = await sql`
     SELECT COUNT(*)::int AS registered
     FROM users
