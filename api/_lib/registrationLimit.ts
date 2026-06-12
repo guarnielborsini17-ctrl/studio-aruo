@@ -24,7 +24,10 @@ export function toRegistrationStatus(
   registered: number,
   limit = getBetaUserLimit(),
 ): RegistrationStatus {
-  const normalizedRegistered = Math.max(0, Math.trunc(registered));
+  const truncatedRegistered = Math.trunc(registered);
+  const normalizedRegistered = Number.isSafeInteger(truncatedRegistered)
+    ? Math.max(0, truncatedRegistered)
+    : 0;
   const normalizedLimit = Math.max(0, Math.trunc(limit));
   const remaining = Math.max(0, normalizedLimit - normalizedRegistered);
 
