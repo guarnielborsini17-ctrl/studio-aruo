@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import {
   getBetaUserLimit,
   toRegistrationStatus,
@@ -94,6 +95,18 @@ try {
     remaining: 10,
     open: true,
   });
+
+  const endpointSource = await readFile('api/registration-status.ts', 'utf8');
+  assert.equal(endpointSource.includes("requireMethod(req, res, ['GET'])"), true);
+  assert.equal(endpointSource.includes('readRegistrationStatus()'), true);
+
+  const localAdapterSource = await readFile('scripts/local-api-dev.ts', 'utf8');
+  assert.equal(
+    localAdapterSource.includes(
+      "route('get', '/api/registration-status', 'api/registration-status.ts')"
+    ),
+    true
+  );
 
   console.log('registration limit assertions passed');
 } finally {

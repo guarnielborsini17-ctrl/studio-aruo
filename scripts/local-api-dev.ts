@@ -32,6 +32,7 @@ function route(method: 'get' | 'post' | 'put' | 'delete', url: string, handlerPa
 }
 
 route('post', '/api/setup', 'api/setup.ts');
+route('get', '/api/registration-status', 'api/registration-status.ts');
 route('post', '/api/auth/register', 'api/auth/register.ts');
 route('post', '/api/auth/login', 'api/auth/login.ts');
 route('get', '/api/auth/me', 'api/auth/me.ts');
