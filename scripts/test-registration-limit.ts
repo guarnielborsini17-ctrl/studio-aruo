@@ -45,6 +45,29 @@ try {
     open: false,
   });
 
+  for (const limit of [
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+    -2,
+    0,
+    8.5,
+    Number.MAX_SAFE_INTEGER + 1,
+  ]) {
+    assert.deepEqual(toRegistrationStatus(3, limit), {
+      limit: 10,
+      registered: 3,
+      remaining: 7,
+      open: true,
+    });
+  }
+
+  assert.deepEqual(toRegistrationStatus(3, 12), {
+    limit: 12,
+    registered: 3,
+    remaining: 9,
+    open: true,
+  });
+
   for (const registered of [
     Number.NaN,
     Number.POSITIVE_INFINITY,

@@ -1,5 +1,11 @@
 const DEFAULT_BETA_USER_LIMIT = 10;
 
+function normalizeBetaUserLimit(value: number) {
+  return Number.isSafeInteger(value) && value > 0
+    ? value
+    : DEFAULT_BETA_USER_LIMIT;
+}
+
 export type RegistrationStatus = {
   limit: number;
   registered: number;
@@ -14,10 +20,7 @@ export function getBetaUserLimit(
     return DEFAULT_BETA_USER_LIMIT;
   }
 
-  const limit = Number(value);
-  return Number.isSafeInteger(limit) && limit > 0
-    ? limit
-    : DEFAULT_BETA_USER_LIMIT;
+  return normalizeBetaUserLimit(Number(value));
 }
 
 export function toRegistrationStatus(
@@ -28,7 +31,7 @@ export function toRegistrationStatus(
   const normalizedRegistered = Number.isSafeInteger(truncatedRegistered)
     ? Math.max(0, truncatedRegistered)
     : 0;
-  const normalizedLimit = Math.max(0, Math.trunc(limit));
+  const normalizedLimit = normalizeBetaUserLimit(limit);
   const remaining = Math.max(0, normalizedLimit - normalizedRegistered);
 
   return {
