@@ -249,7 +249,12 @@ export async function uploadWorkImage(
   onProgress?: (percentage: number) => void
 ): Promise<{ url: string; pathname: string }> {
   const token = getSessionToken();
-  const result = await upload(`works/${Date.now()}-${safeFileName(file.name)}`, file, {
+  const extension = file.type === 'image/webp' ? 'webp' : 'jpg';
+  const uniqueName =
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const result = await upload(`works/${uniqueName}.${extension}`, file, {
     access: 'public',
     handleUploadUrl: `${API_BASE}/api/blob/upload-token`,
     contentType: file.type,
