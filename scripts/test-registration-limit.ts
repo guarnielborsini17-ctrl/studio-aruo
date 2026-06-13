@@ -120,15 +120,66 @@ try {
   );
   assert.equal(
     integrationSource.includes(
+      'REGISTRATION_LIMIT_TEST_DATABASE_URL is required',
+    ),
+    true,
+  );
+  assert.equal(
+    integrationSource.includes(
+      'invalid registration limit test database configuration',
+    ),
+    true,
+  );
+  assert.equal(
+    integrationSource.includes(
       'registration limit integration test requires a dedicated database',
     ),
     true,
   );
+  assert.equal(integrationSource.includes('function databaseIdentity'), true);
+  assert.equal(integrationSource.includes("url.protocol === 'postgres:'"), true);
+  assert.equal(integrationSource.includes('url.hostname.toLowerCase()'), true);
+  assert.equal(integrationSource.includes("url.port || '5432'"), true);
+  assert.equal(
+    integrationSource.includes(
+      "url.pathname.replace(/\\/+$/, '') || '/'",
+    ),
+    true,
+  );
+  assert.equal(integrationSource.includes('url.username'), false);
+  assert.equal(integrationSource.includes('url.password'), false);
+  assert.equal(integrationSource.includes('url.search'), false);
+  assert.equal(integrationSource.includes('url.hash'), false);
   assert.equal(integrationSource.includes('!allowShared'), true);
   assert.equal(
     integrationSource.includes('process.env.DATABASE_URL = testDatabaseUrl'),
     true,
   );
+  assert.equal(
+    integrationSource.includes(
+      "import { Client } from '@neondatabase/serverless'",
+    ),
+    true,
+  );
+  assert.equal(integrationSource.includes('new Client(testDatabaseUrl)'), true);
+  assert.equal(integrationSource.includes('let connected = false'), true);
+  assert.equal(integrationSource.includes('let transactionStarted = false'), true);
+  assert.equal(integrationSource.includes('let locked = false'), true);
+  assert.equal(integrationSource.includes("lockClient.query('BEGIN')"), true);
+  assert.equal(
+    integrationSource.includes("SET lock_timeout = '30s'"),
+    true,
+  );
+  assert.equal(
+    integrationSource.includes('SELECT pg_advisory_lock(734981246)'),
+    true,
+  );
+  assert.equal(
+    integrationSource.includes('SELECT pg_advisory_unlock(734981246)'),
+    true,
+  );
+  assert.equal(integrationSource.includes("lockClient.query('ROLLBACK')"), true);
+  assert.equal(integrationSource.includes('await lockClient.end()'), true);
   assert.equal(integrationSource.includes('node:fs/promises'), false);
   assert.equal(integrationSource.includes('node:os'), false);
   assert.equal(integrationSource.includes('LOCK_PATH'), false);
