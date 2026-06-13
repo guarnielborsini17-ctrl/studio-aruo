@@ -12,6 +12,7 @@ import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
 import { ArtistDashboard } from './pages/ArtistDashboard';
 import { FeatureUnavailable } from './pages/FeatureUnavailable';
+import { PublicPortfolio } from './pages/PublicPortfolio';
 
 // --- Context for persisting Gallery state across route changes ---
 const INITIAL_PROJECTS = [
@@ -528,6 +529,7 @@ function AnimatedRoutes() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/dashboard/designer" element={<FeatureUnavailable />} />
         <Route path="/dashboard/artist" element={<ArtistDashboard />} />
+        <Route path="/share/:token" element={<PublicPortfolio />} />
         <Route path="/coming-soon" element={<FeatureUnavailable />} />
         <Route path="/submit" element={<Navigate to="/dashboard" replace />} />
         <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
@@ -536,16 +538,33 @@ function AnimatedRoutes() {
   );
 }
 
+function AppShell() {
+  const location = useLocation();
+  const isPublicShare = location.pathname.startsWith('/share/');
+
+  return (
+    <>
+      <div className="fluid-bg" />
+      {!isPublicShare ? <Navigation /> : null}
+      <main
+        className={
+          isPublicShare
+            ? 'min-h-screen'
+            : 'min-h-screen pt-32 pb-16 px-6 md:px-12 lg:px-24'
+        }
+      >
+        <AnimatedRoutes />
+      </main>
+    </>
+  );
+}
+
 export default function App() {
   return (
     <DataProvider>
       <AuthProvider>
         <Router>
-          <div className="fluid-bg" />
-          <Navigation />
-          <main className="min-h-screen pt-32 pb-16 px-6 md:px-12 lg:px-24">
-            <AnimatedRoutes />
-          </main>
+          <AppShell />
         </Router>
       </AuthProvider>
     </DataProvider>

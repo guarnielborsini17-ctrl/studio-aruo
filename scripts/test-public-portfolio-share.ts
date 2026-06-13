@@ -68,4 +68,15 @@ assert.equal(dashboardSource.includes('复制链接'), true);
 assert.equal(dashboardSource.includes('关闭分享'), true);
 assert.equal(dashboardSource.includes('重新生成'), true);
 
+const publicPageSource = await readFile('src/pages/PublicPortfolio.tsx', 'utf8');
+assert.equal(publicPageSource.includes('meta[name="robots"]'), true);
+assert.equal(publicPageSource.includes('noindex,nofollow,noarchive'), true);
+assert.equal(publicPageSource.includes('登录'), false);
+assert.equal(publicPageSource.includes('注册'), false);
+assert.equal(publicPageSource.includes('工作台'), false);
+
+const appSource = await readFile('src/App.tsx', 'utf8');
+assert.equal(appSource.includes('path="/share/:token"'), true);
+assert.equal(appSource.includes("location.pathname.startsWith('/share/')"), true);
+
 console.log('public portfolio share assertions passed');
