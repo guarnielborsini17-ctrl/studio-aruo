@@ -27,6 +27,9 @@ export async function setupSchema() {
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS pricing_note TEXT NOT NULL DEFAULT ''`;
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_busy BOOLEAN NOT NULL DEFAULT true`;
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS available_date DATE NOT NULL DEFAULT CURRENT_DATE`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS share_token TEXT UNIQUE`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS share_enabled BOOLEAN NOT NULL DEFAULT false`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS share_updated_at TIMESTAMPTZ`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS works (
@@ -187,6 +190,9 @@ type UserRow = {
   pricing_note?: string | null;
   is_busy?: boolean | null;
   available_date?: string | Date | null;
+  share_token?: string | null;
+  share_enabled?: boolean | null;
+  share_updated_at?: string | Date | null;
   balance?: number | string | null;
   created_at?: string;
   updated_at?: string;

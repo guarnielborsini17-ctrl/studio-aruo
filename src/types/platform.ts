@@ -26,6 +26,28 @@ export type Work = {
   updatedAt?: string;
 };
 
+export type ShareLinkState = {
+  token: string;
+  enabled: boolean;
+  updatedAt: string;
+  url: string;
+};
+
+export type PublicPortfolio = {
+  artist: {
+    displayName: string;
+    avatarUrl: string;
+    bio: string;
+    pricingNote: string;
+    isBusy: boolean;
+    availableDate: string;
+  };
+  works: Array<Pick<Work, 'id' | 'title' | 'description' | 'imageUrl' | 'createdAt'>>;
+  pricing: Array<
+    Pick<PricingItem, 'id' | 'name' | 'description' | 'price' | 'unit' | 'sortOrder'>
+  >;
+};
+
 export type ArtistRank = PlatformUser & {
   reviewCount: number;
   averageRating: number;
