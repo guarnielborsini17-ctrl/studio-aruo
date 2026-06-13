@@ -5,7 +5,6 @@ import { PageTransition } from '../components/PageTransition';
 import { WorkShowcaseCard } from '../components/WorkShowcaseCard';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  createInlineImageDataUrl,
   createWork,
   fetchPricing,
   fetchWorks,
@@ -16,6 +15,7 @@ import {
 } from '../lib/platformApi';
 import { uploadWorkBatch } from '../lib/batchWorkUpload';
 import { cn } from '../lib/utils';
+import { processWorkImage } from '../lib/workImageProcessing';
 import type { PricingItem, Work } from '../types/platform';
 
 const EMPTY_PRICING: PricingItem = {
@@ -27,6 +27,12 @@ const EMPTY_PRICING: PricingItem = {
 
 const actionButtonClass =
   'inline-flex items-center justify-center gap-2 rounded-lg border border-glass-border bg-white/[0.035] px-4 py-2 text-sm text-white transition-colors hover:border-accent-blue/60 hover:bg-accent-blue/10 disabled:cursor-not-allowed disabled:opacity-50';
+
+const stageLabels = {
+  processing: '正在处理',
+  uploading: '正在上传',
+  saving: '正在保存',
+} as const;
 
 export function ArtistDashboard() {
   const { user, loading, logout, refreshUser } = useAuth();
@@ -47,6 +53,7 @@ export function ArtistDashboard() {
   const [workFiles, setWorkFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadPosition, setUploadPosition] = useState({ current: 0, total: 0 });
+  const [uploadStage, setUploadStage] = useState('');
   const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState('');
 
@@ -160,29 +167,35 @@ export function ArtistDashboard() {
         files: workFiles,
         title: workTitle,
         description: workDescription.trim(),
+        processImage: processWorkImage,
         uploadImage: uploadWorkImage,
-        createInlineImage: createInlineImageDataUrl,
         createWork,
-        onProgress: ({ current, total, percentage }) => {
+        onProgress: ({ current, total, percentage, stage }) => {
           setUploadPosition({ current, total });
           setUploadProgress(percentage);
+          setUploadStage(stageLabels[stage]);
         },
       });
 
       if (result.succeeded.length > 0) {
-        setWorks((items) => [...result.succeeded.reverse(), ...items]);
+        setWorks((items) => [...result.succeeded].reverse().concat(items));
         setWorkTitle('');
         setWorkDescription('');
       }
       setWorkFiles([]);
       setUploadProgress(0);
       setUploadPosition({ current: 0, total: 0 });
+      setUploadStage('');
 
-      const summary = `${result.succeeded.length} 张上传成功${result.failed ? `，${result.failed} 张上传失败` : ''}。`;
-      setNotice(result.usedInlineFallback ? `${summary} 当前使用本地存储模式展示。` : summary);
+      const summary = `${result.succeeded.length} 张上传成功${
+        result.failed.length ? `，${result.failed.length} 张上传失败` : ''
+      }。`;
+      const failedNames = result.failed.map((item) => item.fileName).join('、');
+      setNotice(failedNames ? `${summary} 失败文件：${failedNames}` : summary);
     } catch {
       setNotice('批量上传未能开始，请稍后再试。');
     } finally {
+      setUploadStage('');
       setUploading(false);
     }
   };
@@ -408,7 +421,7 @@ export function ArtistDashboard() {
               <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <button onClick={uploadWork} disabled={uploading} className={actionButtonClass}>
                   {uploading
-                    ? `正在上传 ${uploadPosition.current}/${uploadPosition.total} · ${Math.round(uploadProgress)}%`
+                    ? `${uploadStage} ${uploadPosition.current}/${uploadPosition.total} · ${Math.round(uploadProgress)}%`
                     : '上传作品'}
                 </button>
                 <span className="truncate text-sm text-text-secondary">

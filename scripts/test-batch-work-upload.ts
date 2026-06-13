@@ -19,35 +19,42 @@ function fakeWork(input: { title: string; description?: string; imageUrl: string
   };
 }
 
-async function testBatchUsesFileNamesAndContinuesThroughBlobFallback() {
-  const createdTitles: string[] = [];
-  const progress: string[] = [];
+async function testBatchProcessesSequentiallyAndContinuesAfterFailure() {
+  const stages: string[] = [];
+  const uploadedNames: string[] = [];
+  const active: string[] = [];
 
   const result = await uploadWorkBatch({
-    files: [fakeFile('living-room.jpg'), fakeFile('bedroom.png')],
-    title: 'Ignored for a batch',
+    files: [fakeFile('living-room.jpg'), fakeFile('broken.png'), fakeFile('bedroom.png')],
+    title: '',
     description: 'Shared description',
+    processImage: async (file) => {
+      assert.equal(active.length, 0);
+      active.push(file.name);
+      stages.push(`${file.name}:processing`);
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      active.pop();
+      if (file.name === 'broken.png') throw new Error('decode_failed');
+      return { name: `processed-${file.name}` } as File;
+    },
     uploadImage: async (file, onProgress) => {
-      onProgress?.(40);
-      if (file.name === 'bedroom.png') {
-        throw new Error('blob unavailable');
-      }
+      uploadedNames.push(file.name);
+      onProgress?.(50);
       return { url: `https://blob.example/${file.name}`, pathname: `works/${file.name}` };
     },
-    createInlineImage: async (file) => `data:image/jpeg;base64,${file.name}`,
-    createWork: async (input) => {
-      createdTitles.push(input.title);
-      return fakeWork(input);
-    },
-    onProgress: (state) => progress.push(`${state.current}/${state.total}:${Math.round(state.percentage)}`),
+    createWork: async (input) => fakeWork(input),
+    onProgress: (state) =>
+      stages.push(`${state.current}:${state.stage}:${Math.round(state.percentage)}`),
   });
 
-  assert.deepEqual(createdTitles, ['living-room', 'bedroom']);
+  assert.deepEqual(uploadedNames, ['processed-living-room.jpg', 'processed-bedroom.png']);
   assert.equal(result.succeeded.length, 2);
-  assert.equal(result.failed, 0);
-  assert.equal(result.usedInlineFallback, true);
-  assert.ok(progress.includes('1/2:40'));
-  assert.ok(progress.includes('2/2:0'));
+  assert.equal(result.failed.length, 1);
+  assert.equal(result.failed[0]?.fileName, 'broken.png');
+  assert.equal(result.failed[0]?.reason, 'decode_failed');
+  assert.equal(stages.includes('2:processing:0'), true);
+  assert.equal(stages.includes('3:uploading:50'), true);
+  assert.equal(stages.includes('3:saving:100'), true);
 }
 
 async function testSingleFileUsesManualTitle() {
@@ -55,27 +62,33 @@ async function testSingleFileUsesManualTitle() {
     files: [fakeFile('manual-title-source.webp')],
     title: 'Manual Gallery Title',
     description: '',
-    uploadImage: async (file) => ({ url: `https://blob.example/${file.name}`, pathname: `works/${file.name}` }),
-    createInlineImage: async (file) => `data:image/jpeg;base64,${file.name}`,
+    processImage: async (file) => file,
+    uploadImage: async (file) => ({
+      url: `https://blob.example/${file.name}`,
+      pathname: `works/${file.name}`,
+    }),
     createWork: async (input) => fakeWork(input),
   });
 
   assert.equal(result.succeeded[0]?.title, 'Manual Gallery Title');
 }
 
-async function testCreateFailureDoesNotStopRemainingFiles() {
+async function testSaveFailureDoesNotStopRemainingFiles() {
   const attemptedTitles: string[] = [];
 
   const result = await uploadWorkBatch({
     files: [fakeFile('first.jpg'), fakeFile('second.jpg'), fakeFile('third.jpg')],
     title: '',
     description: '',
-    uploadImage: async (file) => ({ url: `https://blob.example/${file.name}`, pathname: `works/${file.name}` }),
-    createInlineImage: async (file) => `data:image/jpeg;base64,${file.name}`,
+    processImage: async (file) => file,
+    uploadImage: async (file) => ({
+      url: `https://blob.example/${file.name}`,
+      pathname: `works/${file.name}`,
+    }),
     createWork: async (input) => {
       attemptedTitles.push(input.title);
       if (input.title === 'second') {
-        throw new Error('database unavailable');
+        throw new Error('database_unavailable');
       }
       return fakeWork(input);
     },
@@ -83,11 +96,11 @@ async function testCreateFailureDoesNotStopRemainingFiles() {
 
   assert.deepEqual(attemptedTitles, ['first', 'second', 'third']);
   assert.equal(result.succeeded.length, 2);
-  assert.equal(result.failed, 1);
+  assert.deepEqual(result.failed, [{ fileName: 'second.jpg', reason: 'database_unavailable' }]);
 }
 
-await testBatchUsesFileNamesAndContinuesThroughBlobFallback();
+await testBatchProcessesSequentiallyAndContinuesAfterFailure();
 await testSingleFileUsesManualTitle();
-await testCreateFailureDoesNotStopRemainingFiles();
+await testSaveFailureDoesNotStopRemainingFiles();
 
 console.log('batch work upload assertions passed');
