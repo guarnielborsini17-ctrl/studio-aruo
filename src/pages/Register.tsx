@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { PageTransition } from '../components/PageTransition';
 import { useAuth } from '../contexts/AuthContext';
@@ -14,12 +14,47 @@ export function Register() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [registrationStatus, setRegistrationStatus] = useState<RegistrationStatus | null>(null);
+  const [statusLoading, setStatusLoading] = useState(true);
+  const [statusFetchFailed, setStatusFetchFailed] = useState(false);
+  const registrationClosedRef = useRef(false);
+  const fullHeadingRef = useRef<HTMLParagraphElement>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     void fetchRegistrationStatus()
-      .then(setRegistrationStatus)
-      .catch(() => undefined);
+      .then((status) => {
+        if (cancelled || registrationClosedRef.current) {
+          return;
+        }
+
+        setRegistrationStatus(status);
+      })
+      .catch(() => {
+        if (cancelled || registrationClosedRef.current) {
+          return;
+        }
+
+        setStatusFetchFailed(true);
+      })
+      .finally(() => {
+        if (cancelled || registrationClosedRef.current) {
+          return;
+        }
+
+        setStatusLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  useEffect(() => {
+    if (error === '首批内测名额刚刚用完' && registrationStatus?.open === false) {
+      fullHeadingRef.current?.focus();
+    }
+  }, [error, registrationStatus?.open]);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -32,6 +67,7 @@ export function Register() {
     } catch (err) {
       const code = err instanceof Error ? err.message : '';
       if (code === 'registration_full') {
+        registrationClosedRef.current = true;
         setError('首批内测名额刚刚用完');
         setRegistrationStatus((current) => ({
           limit: current?.limit ?? 10,
@@ -54,18 +90,52 @@ export function Register() {
         <h2 className="text-4xl text-white mb-3">创建绘图员账号</h2>
         <p className="text-text-secondary mb-8">注册后即可上传作品、维护展示资料和套餐价格。</p>
 
-        {error && <p className="mb-5 text-sm text-accent-orange">{error}</p>}
+        {error && (
+          <p className="mb-5 text-sm text-accent-orange" role="alert">
+            {error}
+          </p>
+        )}
 
         {registrationStatus?.open === false ? (
-          <div className="rounded-lg border border-glass-border bg-white/[0.035] p-6">
-            <p className="text-lg text-white">首批内测名额已满</p>
+          <div
+            className="rounded-lg border border-glass-border bg-white/[0.035] p-6"
+            role="alert"
+          >
+            <p
+              className="text-lg text-white outline-none"
+              ref={fullHeadingRef}
+              tabIndex={-1}
+            >
+              首批内测名额已满
+            </p>
             <p className="mt-2 text-sm text-text-secondary">感谢关注，后续开放时间会另行通知。</p>
           </div>
+        ) : statusLoading ? (
+          <p
+            className="rounded-lg border border-glass-border bg-white/[0.035] p-5 text-sm text-text-secondary"
+            role="status"
+            aria-live="polite"
+          >
+            正在确认内测名额...
+          </p>
         ) : (
           <>
             {registrationStatus && (
-              <p className="mb-5 text-sm text-text-secondary">
+              <p
+                className="mb-5 text-sm text-text-secondary"
+                role="status"
+                aria-live="polite"
+              >
                 首批内测剩余 <span className="text-white">{registrationStatus.remaining}</span> 个名额
+              </p>
+            )}
+            {statusFetchFailed && (
+              <p
+                className="mb-5 text-sm text-text-secondary"
+                role="status"
+                aria-live="polite"
+              >
+                名额状态暂时无法获取，提交时将由服务器确认。
               </p>
             )}
 

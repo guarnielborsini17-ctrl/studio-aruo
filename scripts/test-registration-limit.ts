@@ -208,6 +208,24 @@ try {
   assert.equal(registerPageSource.includes('首批内测剩余'), true);
   assert.equal(registerPageSource.includes('首批内测名额已满'), true);
   assert.equal(registerPageSource.includes("code === 'registration_full'"), true);
+  assert.equal(registerPageSource.includes('registrationClosedRef'), true);
+  assert.equal(
+    registerPageSource.indexOf('registrationClosedRef.current = true') <
+      registerPageSource.indexOf("setError('首批内测名额刚刚用完')"),
+    true,
+  );
+  assert.equal(registerPageSource.includes('let cancelled = false'), true);
+  assert.equal(registerPageSource.includes('cancelled = true'), true);
+  assert.equal(
+    registerPageSource.includes(
+      'if (cancelled || registrationClosedRef.current)',
+    ),
+    true,
+  );
+  assert.equal(registerPageSource.includes('正在确认内测名额...'), true);
+  assert.equal(registerPageSource.includes('role="status"'), true);
+  assert.equal(registerPageSource.includes('aria-live="polite"'), true);
+  assert.equal(registerPageSource.includes('role="alert"'), true);
 
   console.log('registration limit assertions passed');
 } finally {
