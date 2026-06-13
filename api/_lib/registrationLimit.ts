@@ -56,7 +56,7 @@ export function toRegistrationStatus(
 }
 
 export async function readRegistrationStatus(): Promise<RegistrationStatus> {
-  const { sql } = await import('./db');
+  const { sql } = await import('./db.js');
   const rows = await sql`
     SELECT COUNT(*)::int AS registered
     FROM users
@@ -69,7 +69,7 @@ export async function registerUserWithinLimit(
   input: LimitedRegistrationInput,
 ): Promise<LimitedRegistrationResult> {
   const limit = normalizeBetaUserLimit(input.limit ?? getBetaUserLimit());
-  const { sql } = await import('./db');
+  const { sql } = await import('./db.js');
   const rows = await sql`
     WITH registration_lock AS (
       SELECT pg_advisory_xact_lock(${REGISTER_USER_LOCK_ID})

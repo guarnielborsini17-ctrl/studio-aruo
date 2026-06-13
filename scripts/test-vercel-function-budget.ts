@@ -43,7 +43,10 @@ async function collectTypeScriptFiles(directory: string, relative = ''): Promise
 
 for (const file of await collectTypeScriptFiles('api')) {
   const source = await readFile(file, 'utf8');
-  const relativeImports = source.matchAll(/from\s+['"](\.{1,2}\/[^'"]+)['"]/g);
+  const relativeImports = [
+    ...source.matchAll(/from\s+['"](\.{1,2}\/[^'"]+)['"]/g),
+    ...source.matchAll(/import\(\s*['"](\.{1,2}\/[^'"]+)['"]\s*\)/g),
+  ];
 
   for (const match of relativeImports) {
     assert.equal(
