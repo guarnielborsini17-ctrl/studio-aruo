@@ -89,6 +89,13 @@ export type AuthSession = {
   token: string;
 };
 
+export type RegistrationStatus = {
+  limit: number;
+  registered: number;
+  remaining: number;
+  open: boolean;
+};
+
 export type LoginInput = {
   username: string;
   password: string;

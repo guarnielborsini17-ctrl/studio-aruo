@@ -198,6 +198,17 @@ try {
     true
   );
 
+  const platformApiSource = await readFile('src/lib/platformApi.ts', 'utf8');
+  assert.equal(
+    platformApiSource.includes("'/api/registration-status'"),
+    true,
+  );
+
+  const registerPageSource = await readFile('src/pages/Register.tsx', 'utf8');
+  assert.equal(registerPageSource.includes('首批内测剩余'), true);
+  assert.equal(registerPageSource.includes('首批内测名额已满'), true);
+  assert.equal(registerPageSource.includes("code === 'registration_full'"), true);
+
   console.log('registration limit assertions passed');
 } finally {
   if (originalBetaUserLimit === undefined) {

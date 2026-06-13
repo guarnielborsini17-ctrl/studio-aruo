@@ -8,6 +8,7 @@ import type {
   PlatformUser,
   PricingItem,
   RegisterInput,
+  RegistrationStatus,
   Review,
   Work,
 } from '../types/platform';
@@ -125,6 +126,12 @@ export async function registerAccount(input: RegisterInput): Promise<AuthSession
   });
   setSessionToken(data.token);
   return { user: normalizeUser(data.user), token: data.token };
+}
+
+export async function fetchRegistrationStatus(): Promise<RegistrationStatus> {
+  return platformRequest('/api/registration-status', {
+    method: 'GET',
+  });
 }
 
 export async function loginAccount(input: LoginInput): Promise<AuthSession> {
