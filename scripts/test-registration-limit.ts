@@ -104,6 +104,12 @@ try {
   assert.equal(endpointSource.includes("requireMethod(req, res, ['GET'])"), true);
   assert.equal(endpointSource.includes('readRegistrationStatus()'), true);
 
+  const registerSource = await readFile('api/auth/register.ts', 'utf8');
+  assert.equal(registerSource.includes('registerUserWithinLimit({'), true);
+  assert.equal(registerSource.includes('registration_full'), true);
+  assert.equal(registerSource.includes('username_exists'), true);
+  assert.equal(registerSource.includes('INSERT INTO users'), false);
+
   const localAdapterSource = await readFile('scripts/local-api-dev.ts', 'utf8');
   assert.equal(
     localAdapterSource.includes(
