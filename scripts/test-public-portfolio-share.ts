@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createShareToken, mapShareState } from '../api/_lib/shareToken';
+import { buildPublicShareUrl } from '../api/_lib/shareUrl';
 
 const first = createShareToken();
 const second = createShareToken();
@@ -8,6 +9,37 @@ const second = createShareToken();
 assert.notEqual(first, second);
 assert.match(first, /^[A-Za-z0-9_-]+$/);
 assert.ok(first.length >= 22);
+
+assert.equal(
+  buildPublicShareUrl(
+    {
+      origin: 'http://127.0.0.1:3000',
+      host: '127.0.0.1:3002',
+    },
+    first
+  ),
+  `http://127.0.0.1:3000/#/share/${first}`
+);
+assert.equal(
+  buildPublicShareUrl(
+    {
+      forwardedProto: 'https',
+      forwardedHost: 'studio-aruo.vercel.app',
+    },
+    first
+  ),
+  `https://studio-aruo.vercel.app/#/share/${first}`
+);
+assert.equal(
+  buildPublicShareUrl(
+    {
+      referer: 'http://127.0.0.1:3000/#/dashboard/artist',
+      host: 'localhost:3002',
+    },
+    first
+  ),
+  `http://127.0.0.1:3000/#/share/${first}`
+);
 
 assert.deepEqual(
   mapShareState({

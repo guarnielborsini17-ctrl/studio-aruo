@@ -2,19 +2,23 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { sql } from './_lib/db';
 import { requireMethod, requireRole, sendJson } from './_lib/http';
 import { createShareToken, mapShareState } from './_lib/shareToken';
+import { buildPublicShareUrl } from './_lib/shareUrl';
 
 function headerValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value || '';
 }
 
 function publicUrl(req: VercelRequest, token: string) {
-  if (!token) return '';
-
-  const proto = headerValue(req.headers['x-forwarded-proto']) || 'https';
-  const host = headerValue(req.headers['x-forwarded-host']) || headerValue(req.headers.host);
-  return host
-    ? `${proto}://${host}/#/share/${encodeURIComponent(token)}`
-    : `/#/share/${encodeURIComponent(token)}`;
+  return buildPublicShareUrl(
+    {
+      origin: headerValue(req.headers.origin),
+      referer: headerValue(req.headers.referer),
+      forwardedProto: headerValue(req.headers['x-forwarded-proto']),
+      forwardedHost: headerValue(req.headers['x-forwarded-host']),
+      host: headerValue(req.headers.host),
+    },
+    token
+  );
 }
 
 function responseState(req: VercelRequest, row: Parameters<typeof mapShareState>[0]) {
