@@ -7,9 +7,11 @@ import type {
   LoginInput,
   PlatformUser,
   PricingItem,
+  PublicPortfolio,
   RegisterInput,
   RegistrationStatus,
   Review,
+  ShareLinkState,
   Work,
 } from '../types/platform';
 
@@ -170,6 +172,23 @@ export async function fetchArtist(id: string): Promise<{
   return platformRequest(`/api/artists/${encodeURIComponent(id)}`, {
     method: 'GET',
   });
+}
+
+export async function fetchShareLink(): Promise<ShareLinkState> {
+  return platformRequest('/api/share-link', { method: 'GET' });
+}
+
+export async function generateShareLink(): Promise<ShareLinkState> {
+  return platformRequest('/api/share-link', { method: 'POST' });
+}
+
+export async function disableShareLink(): Promise<ShareLinkState> {
+  return platformRequest('/api/share-link', { method: 'DELETE' });
+}
+
+export async function fetchPublicPortfolio(token: string): Promise<PublicPortfolio> {
+  const path = '/api/public-portfolio?token=' + encodeURIComponent(token);
+  return platformRequest(path, { method: 'GET' });
 }
 
 export async function fetchWorks(userId?: string): Promise<Work[]> {

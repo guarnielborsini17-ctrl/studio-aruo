@@ -57,4 +57,15 @@ assert.equal(
   true
 );
 
+const platformApiSource = await readFile('src/lib/platformApi.ts', 'utf8');
+assert.equal(platformApiSource.includes("'/api/share-link'"), true);
+assert.equal(platformApiSource.includes("'/api/public-portfolio?token="), true);
+
+const dashboardSource = await readFile('src/pages/ArtistDashboard.tsx', 'utf8');
+assert.equal(dashboardSource.includes('公开作品页'), true);
+assert.equal(dashboardSource.includes('生成公开链接'), true);
+assert.equal(dashboardSource.includes('复制链接'), true);
+assert.equal(dashboardSource.includes('关闭分享'), true);
+assert.equal(dashboardSource.includes('重新生成'), true);
+
 console.log('public portfolio share assertions passed');

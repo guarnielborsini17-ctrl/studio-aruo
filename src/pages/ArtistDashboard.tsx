@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { ImagePlus, LogOut, Plus, Save, Upload } from 'lucide-react';
+import { Copy, EyeOff, ImagePlus, Link2, LogOut, Plus, RefreshCw, Save, Upload } from 'lucide-react';
 import { PageTransition } from '../components/PageTransition';
 import { WorkShowcaseCard } from '../components/WorkShowcaseCard';
 import { useAuth } from '../contexts/AuthContext';
 import {
   createWork,
+  disableShareLink,
   fetchPricing,
+  fetchShareLink,
   fetchWorks,
+  generateShareLink,
   savePricing,
   updateProfile,
   uploadAvatarImage,
@@ -16,7 +19,7 @@ import {
 import { uploadWorkBatch } from '../lib/batchWorkUpload';
 import { cn } from '../lib/utils';
 import { processWorkImage } from '../lib/workImageProcessing';
-import type { PricingItem, Work } from '../types/platform';
+import type { PricingItem, ShareLinkState, Work } from '../types/platform';
 
 const EMPTY_PRICING: PricingItem = {
   name: '',
@@ -55,6 +58,8 @@ export function ArtistDashboard() {
   const [uploadPosition, setUploadPosition] = useState({ current: 0, total: 0 });
   const [uploadStage, setUploadStage] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [share, setShare] = useState<ShareLinkState | null>(null);
+  const [shareBusy, setShareBusy] = useState(false);
   const [notice, setNotice] = useState('');
 
   useEffect(() => {
@@ -65,10 +70,15 @@ export function ArtistDashboard() {
     setPricingNote(user.pricingNote || '');
     setIsBusy(user.isBusy ?? true);
     setAvailableDate(user.availableDate || new Date().toISOString().slice(0, 10));
-    Promise.all([fetchWorks(user.id), fetchPricing(user.id)])
-      .then(([workData, pricingData]) => {
+    Promise.all([
+      fetchWorks(user.id),
+      fetchPricing(user.id),
+      fetchShareLink().catch(() => null),
+    ])
+      .then(([workData, pricingData, shareData]) => {
         setWorks(workData);
         setPricing(pricingData.length ? pricingData : [{ ...EMPTY_PRICING, name: '单张效果图', price: 300 }]);
+        setShare(shareData);
       })
       .catch(() => setNotice('工作台数据暂时无法加载。'));
   }, [user]);
@@ -151,6 +161,43 @@ export function ArtistDashboard() {
 
   const addPricingItem = () => {
     setPricing((items) => [...items, { ...EMPTY_PRICING }]);
+  };
+
+  const generateShare = async () => {
+    if (shareBusy) return;
+    const replacing = Boolean(share?.token);
+    setShareBusy(true);
+    try {
+      setShare(await generateShareLink());
+      setNotice(replacing ? '已生成新的公开链接，旧链接已失效。' : '公开链接已生成。');
+    } catch {
+      setNotice('公开链接生成失败。');
+    } finally {
+      setShareBusy(false);
+    }
+  };
+
+  const disableShare = async () => {
+    if (shareBusy) return;
+    setShareBusy(true);
+    try {
+      setShare(await disableShareLink());
+      setNotice('公开作品页已关闭。');
+    } catch {
+      setNotice('关闭分享失败。');
+    } finally {
+      setShareBusy(false);
+    }
+  };
+
+  const copyShare = async () => {
+    if (!share?.url || !share.enabled) return;
+    try {
+      await navigator.clipboard.writeText(share.url);
+      setNotice('公开链接已复制。');
+    } catch {
+      setNotice('自动复制失败，请手动复制下面的链接。');
+    }
   };
 
   const uploadWork = async () => {
@@ -316,6 +363,61 @@ export function ArtistDashboard() {
                   <Save className="h-4 w-4" />
                   {savingAvailability ? '正在保存...' : '保存接单状态'}
                 </button>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-glass-border bg-white/[0.035] p-5">
+              <div className="mb-2 flex items-center gap-2">
+                <Link2 className="h-5 w-5 text-accent-blue" />
+                <h3 className="text-lg text-white">公开作品页</h3>
+              </div>
+              <p className="mb-4 text-sm leading-relaxed text-text-secondary">
+                生成后可发给设计师查看你的资料、作品和价格，不包含登录或工作台。
+              </p>
+
+              {share?.url ? (
+                <input
+                  readOnly
+                  value={share.url}
+                  aria-label="公开作品页链接"
+                  className="mb-3 w-full rounded-lg border border-glass-border bg-black/20 px-3 py-2 text-sm text-white outline-none"
+                />
+              ) : null}
+
+              <div className="flex flex-wrap gap-2">
+                {!share?.token ? (
+                  <button type="button" onClick={generateShare} disabled={shareBusy} className={actionButtonClass}>
+                    <Link2 className="h-4 w-4" />
+                    生成公开链接
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={copyShare}
+                      disabled={!share.enabled || shareBusy}
+                      className={actionButtonClass}
+                    >
+                      <Copy className="h-4 w-4" />
+                      复制链接
+                    </button>
+                    <button type="button" onClick={generateShare} disabled={shareBusy} className={actionButtonClass}>
+                      <RefreshCw className="h-4 w-4" />
+                      重新生成
+                    </button>
+                    {share.enabled ? (
+                      <button type="button" onClick={disableShare} disabled={shareBusy} className={actionButtonClass}>
+                        <EyeOff className="h-4 w-4" />
+                        关闭分享
+                      </button>
+                    ) : (
+                      <button type="button" onClick={generateShare} disabled={shareBusy} className={actionButtonClass}>
+                        <Link2 className="h-4 w-4" />
+                        重新开启
+                      </button>
+                    )}
+                  </>
+                )}
               </div>
             </div>
 
