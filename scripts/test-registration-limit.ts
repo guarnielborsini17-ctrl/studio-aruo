@@ -110,6 +110,35 @@ try {
   assert.equal(registerSource.includes('username_exists'), true);
   assert.equal(registerSource.includes('INSERT INTO users'), false);
 
+  const integrationSource = await readFile(
+    'scripts/test-registration-limit-integration.ts',
+    'utf8',
+  );
+  assert.equal(
+    integrationSource.includes('REGISTRATION_LIMIT_TEST_DATABASE_URL'),
+    true,
+  );
+  assert.equal(
+    integrationSource.includes(
+      'registration limit integration test requires a dedicated database',
+    ),
+    true,
+  );
+  assert.equal(integrationSource.includes('!allowShared'), true);
+  assert.equal(
+    integrationSource.includes('process.env.DATABASE_URL = testDatabaseUrl'),
+    true,
+  );
+  assert.equal(integrationSource.includes('node:fs/promises'), false);
+  assert.equal(integrationSource.includes('node:os'), false);
+  assert.equal(integrationSource.includes('LOCK_PATH'), false);
+  assert.equal(
+    integrationSource.includes(
+      'studio-aruo-registration-limit-integration.lock',
+    ),
+    false,
+  );
+
   const localAdapterSource = await readFile('scripts/local-api-dev.ts', 'utf8');
   assert.equal(
     localAdapterSource.includes(
