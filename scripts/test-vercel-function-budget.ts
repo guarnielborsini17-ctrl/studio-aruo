@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readdir } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { matchApiRoute } from '../api/_lib/routeMatcher';
 
@@ -24,6 +24,35 @@ async function collectEntrypoints(directory: string, relative = ''): Promise<str
 const entrypoints = await collectEntrypoints('api');
 
 assert.deepEqual(entrypoints, ['[...path].ts']);
+
+async function collectTypeScriptFiles(directory: string, relative = ''): Promise<string[]> {
+  const entries = await readdir(path.join(directory, relative), { withFileTypes: true });
+  const files: string[] = [];
+
+  for (const entry of entries) {
+    const next = path.join(relative, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...(await collectTypeScriptFiles(directory, next)));
+    } else if (entry.isFile() && entry.name.endsWith('.ts')) {
+      files.push(path.join(directory, next));
+    }
+  }
+
+  return files;
+}
+
+for (const file of await collectTypeScriptFiles('api')) {
+  const source = await readFile(file, 'utf8');
+  const relativeImports = source.matchAll(/from\s+['"](\.{1,2}\/[^'"]+)['"]/g);
+
+  for (const match of relativeImports) {
+    assert.equal(
+      match[1].endsWith('.js'),
+      true,
+      `${file} must use a .js extension for Node ESM imports: ${match[1]}`
+    );
+  }
+}
 
 assert.deepEqual(
   matchApiRoute(

@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { sql } from '../_lib/db';
-import { requireMethod, sendJson, textValue } from '../_lib/http';
+import { sql } from '../_lib/db.js';
+import { requireMethod, sendJson, textValue } from '../_lib/http.js';
 
 function queryText(value: string | string[] | undefined) {
   return textValue(Array.isArray(value) ? value[0] : value);

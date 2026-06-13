@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createSessionToken, hashPassword, MAX_PASSWORD_LENGTH, type UserRole } from '../../_lib/auth';
-import { mapUser } from '../../_lib/db';
-import { rawStringValue, requireMethod, sendJson, textValue } from '../../_lib/http';
-import { registerUserWithinLimit } from '../../_lib/registrationLimit';
+import { createSessionToken, hashPassword, MAX_PASSWORD_LENGTH, type UserRole } from '../../_lib/auth.js';
+import { mapUser } from '../../_lib/db.js';
+import { rawStringValue, requireMethod, sendJson, textValue } from '../../_lib/http.js';
+import { registerUserWithinLimit } from '../../_lib/registrationLimit.js';
 
 function parseRole(value: unknown): UserRole | null {
   return value === 'designer' || value === 'artist' ? value : null;

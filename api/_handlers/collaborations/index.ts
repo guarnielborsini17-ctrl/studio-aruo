@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { sql } from '../../_lib/db';
-import { requireMethod, requireUser, sendJson, textValue } from '../../_lib/http';
+import { sql } from '../../_lib/db.js';
+import { requireMethod, requireUser, sendJson, textValue } from '../../_lib/http.js';
 
 type CollaborationRow = {
   id: string;

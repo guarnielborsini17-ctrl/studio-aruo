@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { mapUser, sql } from '../_lib/db';
-import { requireMethod, requireUser, sendJson } from '../_lib/http';
-import { parseProfileUpdate } from '../_lib/profileInput';
+import { mapUser, sql } from '../_lib/db.js';
+import { requireMethod, requireUser, sendJson } from '../_lib/http.js';
+import { parseProfileUpdate } from '../_lib/profileInput.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!requireMethod(req, res, ['PUT'])) {

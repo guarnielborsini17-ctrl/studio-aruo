@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { mapUser, mapWork, sql } from '../../_lib/db';
-import { requireMethod, sendJson, textValue } from '../../_lib/http';
+import { mapUser, mapWork, sql } from '../../_lib/db.js';
+import { requireMethod, sendJson, textValue } from '../../_lib/http.js';
 
 type PricingRow = {
   id: string;

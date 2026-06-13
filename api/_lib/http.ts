@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getUserFromRequest, type SessionUser, type UserRole } from './auth';
+import { getUserFromRequest, type SessionUser, type UserRole } from './auth.js';
 
 export type ApiHandler = (req: VercelRequest, res: VercelResponse) => Promise<void> | void;
 

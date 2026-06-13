@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createSessionToken, verifyPassword } from '../../_lib/auth';
-import { mapUser, sql } from '../../_lib/db';
-import { rawStringValue, requireMethod, sendJson, textValue } from '../../_lib/http';
+import { createSessionToken, verifyPassword } from '../../_lib/auth.js';
+import { mapUser, sql } from '../../_lib/db.js';
+import { rawStringValue, requireMethod, sendJson, textValue } from '../../_lib/http.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!requireMethod(req, res, ['POST'])) {
