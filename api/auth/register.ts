@@ -1,7 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createSessionToken, hashPassword, MAX_PASSWORD_LENGTH, type UserRole } from '../_lib/auth';
-import { mapUser, sql } from '../_lib/db';
+import { mapUser } from '../_lib/db';
 import { rawStringValue, requireMethod, sendJson, textValue } from '../_lib/http';
+import { registerUserWithinLimit } from '../_lib/registrationLimit';
 
 function parseRole(value: unknown): UserRole | null {
   return value === 'designer' || value === 'artist' ? value : null;
@@ -38,12 +39,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const rows = await sql`
-      INSERT INTO users (username, password_hash, role, display_name)
-      VALUES (${username}, ${hashPassword(password)}, ${role}, ${displayName})
-      RETURNING *
-    `;
-    const user = mapUser(rows[0] as Parameters<typeof mapUser>[0]);
+    const result = await registerUserWithinLimit({
+      username,
+      passwordHash: hashPassword(password),
+      role,
+      displayName,
+    });
+
+    if (result.kind === 'full') {
+      sendJson(res, 409, { error: 'registration_full' });
+      return;
+    }
+
+    const user = mapUser(result.row as Parameters<typeof mapUser>[0]);
     sendJson(res, 201, { user, token: createSessionToken(user) });
   } catch (error: any) {
     if (error?.code === '23505') {

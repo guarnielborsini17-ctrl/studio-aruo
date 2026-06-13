@@ -2,12 +2,16 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import {
   getBetaUserLimit,
+  REGISTER_USER_LOCK_ID,
   toRegistrationStatus,
 } from '../api/_lib/registrationLimit';
 
 const originalBetaUserLimit = process.env.BETA_USER_LIMIT;
 
 try {
+  assert.equal(REGISTER_USER_LOCK_ID, 734981245);
+  assert.equal(Number.isSafeInteger(REGISTER_USER_LOCK_ID), true);
+
   delete process.env.BETA_USER_LIMIT;
 
   assert.equal(getBetaUserLimit(undefined), 10);
