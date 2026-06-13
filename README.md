@@ -1,6 +1,9 @@
 # Studio Aruo Vercel Demo
 
-Studio Aruo's current first-version UI supports artist registration, profiles, pricing, and portfolio uploads through Vercel Blob. The Neon schema also retains legacy collaboration and review tables for future use.
+Studio Aruo's current first-version UI supports artist registration, profiles,
+pricing, optimized portfolio uploads through Vercel Blob, and revocable public
+portfolio links. The Neon schema also retains legacy collaboration and review
+tables for future use.
 
 ## Local Development
 
@@ -46,7 +49,8 @@ in Vercel.
 
 ## First-Time Setup
 
-After deployment, initialize the Neon schema once:
+After deployment, initialize the Neon schema. Run this again after releases that
+add database columns:
 
 ```bash
 curl -X POST "https://your-vercel-domain.vercel.app/api/setup" \

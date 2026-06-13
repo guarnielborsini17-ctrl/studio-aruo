@@ -44,7 +44,9 @@ The repository also includes `vercel.json` with the same build settings.
 
 ## 4. Initialize Database
 
-After the first deployment succeeds, call setup once:
+After the first deployment succeeds, call setup once. Run it again after
+deploying a version that adds database columns, including the public portfolio
+share fields:
 
 ```bash
 curl -X POST "https://your-vercel-domain.vercel.app/api/setup" \
@@ -61,8 +63,12 @@ Expected response:
 
 1. Open `/api/registration-status` and confirm the response includes `limit`, `registered`, `remaining`, and `open`.
 2. Register one artist account.
-3. Log in as the artist, edit the profile, save pricing, and upload a portfolio image.
-4. When `registered` reaches the `limit` returned by `/api/registration-status`, confirm `/#/register` hides the registration form and the register API returns `registration_full`.
+3. Log in as the artist, edit the profile, and save pricing.
+4. Upload a typical 4K JPEG or PNG. Confirm the saved portfolio image displays correctly and its longest side is no more than 2560 pixels.
+5. Generate a public portfolio link and open it in a signed-out browser. Confirm it shows the artist profile, availability, works, and pricing without account or workspace navigation.
+6. Close sharing and confirm the old link displays the unavailable state. Generate a new link and confirm the old token remains invalid.
+7. Confirm the public page includes `noindex,nofollow,noarchive`.
+8. When `registered` reaches the `limit` returned by `/api/registration-status`, confirm `/#/register` hides the registration form and the register API returns `registration_full`.
 
 ## 6. Run The Registration-Limit Concurrency Test
 

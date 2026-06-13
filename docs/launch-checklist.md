@@ -23,7 +23,7 @@
 
 ## Initialize Database
 
-Run once after the first deployment:
+Run after the first deployment and after releases that add database columns:
 
 ```bash
 curl -X POST "https://your-vercel-domain.vercel.app/api/setup" \
@@ -36,7 +36,13 @@ curl -X POST "https://your-vercel-domain.vercel.app/api/setup" \
 - [ ] Register an artist account
 - [ ] Artist saves profile
 - [ ] Artist saves pricing
-- [ ] Artist uploads one work image
+- [ ] Artist uploads a typical 4K work image
+- [ ] Uploaded display image renders correctly and its longest side is at most 2560 pixels
+- [ ] Artist generates a public portfolio link
+- [ ] Signed-out visitor can view profile, availability, works, and pricing without account navigation
+- [ ] Public portfolio page sets `noindex,nofollow,noarchive`
+- [ ] Closing sharing makes the current link unavailable
+- [ ] Regenerating creates a new link and leaves the old token invalid
 - [ ] When `registered` reaches the returned `limit`, the register page hides its form and the register API returns `registration_full`
 
 ## Development/CI Concurrency Test
