@@ -17,7 +17,7 @@ function databaseIdentity(value: string) {
       protocol,
       hostname: url.hostname.toLowerCase(),
       port: url.port || '5432',
-      pathname: url.pathname.replace(/\/+$/, '') || '/',
+      pathname: decodeURI(url.pathname).replace(/\/+$/, '') || '/',
     });
   } catch {
     throw new Error(

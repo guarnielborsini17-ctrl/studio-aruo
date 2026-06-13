@@ -142,7 +142,7 @@ try {
   assert.equal(integrationSource.includes("url.port || '5432'"), true);
   assert.equal(
     integrationSource.includes(
-      "url.pathname.replace(/\\/+$/, '') || '/'",
+      "decodeURI(url.pathname).replace(/\\/+$/, '') || '/'",
     ),
     true,
   );
