@@ -54,7 +54,7 @@ assert.deepEqual(
   }
 );
 
-const shareHandlerSource = await readFile('api/share-link.ts', 'utf8');
+const shareHandlerSource = await readFile('api/_handlers/share-link.ts', 'utf8');
 assert.equal(shareHandlerSource.includes("['GET', 'POST', 'DELETE']"), true);
 assert.equal(shareHandlerSource.includes("requireRole(req, res, 'artist')"), true);
 assert.equal(shareHandlerSource.includes('createShareToken()'), true);
@@ -63,19 +63,19 @@ assert.equal(shareHandlerSource.includes("'Cache-Control', 'no-store'"), true);
 
 const localAdapterSource = await readFile('scripts/local-api-dev.ts', 'utf8');
 assert.equal(
-  localAdapterSource.includes("route('get', '/api/share-link', 'api/share-link.ts')"),
+  localAdapterSource.includes("route('get', '/api/share-link', 'api/_handlers/share-link.ts')"),
   true
 );
 assert.equal(
-  localAdapterSource.includes("route('post', '/api/share-link', 'api/share-link.ts')"),
+  localAdapterSource.includes("route('post', '/api/share-link', 'api/_handlers/share-link.ts')"),
   true
 );
 assert.equal(
-  localAdapterSource.includes("route('delete', '/api/share-link', 'api/share-link.ts')"),
+  localAdapterSource.includes("route('delete', '/api/share-link', 'api/_handlers/share-link.ts')"),
   true
 );
 
-const publicHandlerSource = await readFile('api/public-portfolio.ts', 'utf8');
+const publicHandlerSource = await readFile('api/_handlers/public-portfolio.ts', 'utf8');
 assert.equal(publicHandlerSource.includes('share_enabled = true'), true);
 assert.equal(publicHandlerSource.includes('password_hash'), false);
 assert.equal(publicHandlerSource.includes('username'), false);
@@ -84,7 +84,7 @@ assert.equal(publicHandlerSource.includes("error: 'portfolio_not_found'"), true)
 assert.equal(publicHandlerSource.includes("'Cache-Control', 'no-store'"), true);
 assert.equal(
   localAdapterSource.includes(
-    "route('get', '/api/public-portfolio', 'api/public-portfolio.ts')"
+    "route('get', '/api/public-portfolio', 'api/_handlers/public-portfolio.ts')"
   ),
   true
 );

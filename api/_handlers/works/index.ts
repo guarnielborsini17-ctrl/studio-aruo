@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { mapWork, sql } from '../_lib/db';
-import { requireMethod, requireUser, sendJson, textValue } from '../_lib/http';
+import { mapWork, sql } from '../../_lib/db';
+import { requireMethod, requireUser, sendJson, textValue } from '../../_lib/http';
 
 const PUBLIC_BLOB_HOST_SUFFIX = '.public.blob.vercel-storage.com';
 const BLOB_HOST_SUFFIX = '.blob.vercel-storage.com';

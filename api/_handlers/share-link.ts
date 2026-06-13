@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { sql } from './_lib/db';
-import { requireMethod, requireRole, sendJson } from './_lib/http';
-import { createShareToken, mapShareState } from './_lib/shareToken';
-import { buildPublicShareUrl } from './_lib/shareUrl';
+import { sql } from '../_lib/db';
+import { requireMethod, requireRole, sendJson } from '../_lib/http';
+import { createShareToken, mapShareState } from '../_lib/shareToken';
+import { buildPublicShareUrl } from '../_lib/shareUrl';
 
 function headerValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value || '';

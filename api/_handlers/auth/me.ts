@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { mapUser, sql } from '../_lib/db';
-import { requireMethod, requireUser, sendJson } from '../_lib/http';
+import { mapUser, sql } from '../../_lib/db';
+import { requireMethod, requireUser, sendJson } from '../../_lib/http';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!requireMethod(req, res, ['GET'])) {

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { isAcceptedWorkImageInput } from '../api/works/index';
+import { isAcceptedWorkImageInput } from '../api/_handlers/works/index';
 
 function run() {
   assert.equal(
