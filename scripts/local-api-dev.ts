@@ -36,6 +36,7 @@ route('get', '/api/registration-status', 'api/registration-status.ts');
 route('get', '/api/share-link', 'api/share-link.ts');
 route('post', '/api/share-link', 'api/share-link.ts');
 route('delete', '/api/share-link', 'api/share-link.ts');
+route('get', '/api/public-portfolio', 'api/public-portfolio.ts');
 route('post', '/api/auth/register', 'api/auth/register.ts');
 route('post', '/api/auth/login', 'api/auth/login.ts');
 route('get', '/api/auth/me', 'api/auth/me.ts');

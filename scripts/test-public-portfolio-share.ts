@@ -43,4 +43,18 @@ assert.equal(
   true
 );
 
+const publicHandlerSource = await readFile('api/public-portfolio.ts', 'utf8');
+assert.equal(publicHandlerSource.includes('share_enabled = true'), true);
+assert.equal(publicHandlerSource.includes('password_hash'), false);
+assert.equal(publicHandlerSource.includes('username'), false);
+assert.equal(publicHandlerSource.includes('balance'), false);
+assert.equal(publicHandlerSource.includes("error: 'portfolio_not_found'"), true);
+assert.equal(publicHandlerSource.includes("'Cache-Control', 'no-store'"), true);
+assert.equal(
+  localAdapterSource.includes(
+    "route('get', '/api/public-portfolio', 'api/public-portfolio.ts')"
+  ),
+  true
+);
+
 console.log('public portfolio share assertions passed');
