@@ -23,12 +23,13 @@ export function parseProfileUpdate(value: unknown) {
   const hasIsBusy = owns(input, 'isBusy');
   const hasAvailableDate = owns(input, 'availableDate');
   const isBusy = input.isBusy;
-  const availableDate = text(input.availableDate);
+  const availableDateText = text(input.availableDate);
+  const availableDate = hasAvailableDate ? availableDateText : null;
 
   if (hasIsBusy && typeof isBusy !== 'boolean') {
     throw new Error('invalid_is_busy');
   }
-  if (hasAvailableDate && !validDateOnly(availableDate)) {
+  if (hasAvailableDate && !validDateOnly(availableDateText)) {
     throw new Error('invalid_available_date');
   }
 

@@ -14,7 +14,6 @@ export function WorkShowcaseCard({ work }: { work: Work }) {
       <div className="mt-4 flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="text-[10px] uppercase tracking-[0.28em] text-accent-blue">Showcase Work</p>
-          <h4 className="mt-2 truncate text-sm font-medium uppercase tracking-[0.14em] text-white">{work.title}</h4>
         </div>
         <span className="shrink-0 rounded-full border border-glass-border bg-white/[0.04] px-3 py-1 text-[10px] uppercase tracking-[0.24em] text-text-secondary">
           Portfolio
