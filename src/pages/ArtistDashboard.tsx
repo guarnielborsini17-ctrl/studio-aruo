@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Copy, EyeOff, ImagePlus, Link2, LogOut, Plus, RefreshCw, Save, Upload } from 'lucide-react';
+import { ChevronDown, Copy, EyeOff, ImagePlus, Link2, LogOut, Plus, RefreshCw, Save, Upload } from 'lucide-react';
 import { PageTransition } from '../components/PageTransition';
 import { WorkShowcaseCard } from '../components/WorkShowcaseCard';
 import { useAuth } from '../contexts/AuthContext';
@@ -37,6 +37,53 @@ const stageLabels = {
   saving: '正在保存',
 } as const;
 
+type CollapsiblePanelProps = {
+  id: string;
+  title: React.ReactNode;
+  icon?: React.ReactNode;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+  className?: string;
+};
+
+function CollapsiblePanel({
+  id,
+  title,
+  icon,
+  open,
+  onToggle,
+  children,
+  className = '',
+}: CollapsiblePanelProps) {
+  const contentId = `${id}-content`;
+
+  return (
+    <div id={id} className={cn('rounded-lg border border-glass-border bg-white/[0.035] p-5', className)}>
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between gap-4 text-left"
+        aria-expanded={open}
+        aria-controls={contentId}
+      >
+        <span className="flex min-w-0 items-center gap-2 text-lg text-white">
+          {icon}
+          <span className="truncate">{title}</span>
+        </span>
+        <ChevronDown
+          className={cn('h-4 w-4 shrink-0 text-text-secondary transition-transform', open ? 'rotate-180' : '')}
+        />
+      </button>
+      {open ? (
+        <div id={contentId} className="mt-4">
+          {children}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function ArtistDashboard() {
   const { user, loading, logout, refreshUser } = useAuth();
   const [displayName, setDisplayName] = useState('');
@@ -61,6 +108,11 @@ export function ArtistDashboard() {
   const [share, setShare] = useState<ShareLinkState | null>(null);
   const [shareBusy, setShareBusy] = useState(false);
   const [notice, setNotice] = useState('');
+  const [collapsedPanels, setCollapsedPanels] = useState<Record<string, boolean>>({});
+
+  const togglePanel = (panelId: string) => {
+    setCollapsedPanels((panels) => ({ ...panels, [panelId]: !panels[panelId] }));
+  };
 
   useEffect(() => {
     if (!user || user.role !== 'artist') return;
@@ -266,8 +318,12 @@ export function ArtistDashboard() {
 
         <div className="grid gap-8 lg:grid-cols-[360px_1fr]">
           <aside className="space-y-5">
-            <div className="rounded-lg border border-glass-border bg-white/[0.035] p-5">
-              <h3 className="mb-4 text-lg text-white">展示资料</h3>
+            <CollapsiblePanel
+              id="profile"
+              title="展示资料"
+              open={!collapsedPanels.profile}
+              onToggle={() => togglePanel('profile')}
+            >
               <div className="space-y-3">
                 <input
                   className="w-full rounded-lg border border-glass-border bg-white/5 px-3 py-2 text-white outline-none focus:border-accent-blue/60"
@@ -313,10 +369,14 @@ export function ArtistDashboard() {
                   保存资料
                 </button>
               </div>
-            </div>
+            </CollapsiblePanel>
 
-            <div className="rounded-lg border border-glass-border bg-white/[0.035] p-5">
-              <h3 className="mb-4 text-lg text-white">接单状态</h3>
+            <CollapsiblePanel
+              id="availability"
+              title="接单状态"
+              open={!collapsedPanels.availability}
+              onToggle={() => togglePanel('availability')}
+            >
               <div className="space-y-4">
                 <div>
                   <span className="mb-2 block text-sm text-text-secondary">当前状态</span>
@@ -364,13 +424,15 @@ export function ArtistDashboard() {
                   {savingAvailability ? '正在保存...' : '保存接单状态'}
                 </button>
               </div>
-            </div>
+            </CollapsiblePanel>
 
-            <div className="rounded-lg border border-glass-border bg-white/[0.035] p-5">
-              <div className="mb-2 flex items-center gap-2">
-                <Link2 className="h-5 w-5 text-accent-blue" />
-                <h3 className="text-lg text-white">公开作品页</h3>
-              </div>
+            <CollapsiblePanel
+              id="share"
+              title="公开作品页"
+              icon={<Link2 className="h-5 w-5 text-accent-blue" />}
+              open={!collapsedPanels.share}
+              onToggle={() => togglePanel('share')}
+            >
               <p className="mb-4 text-sm leading-relaxed text-text-secondary">
                 生成后可发给设计师查看你的资料、作品和价格，不包含登录或工作台。
               </p>
@@ -419,14 +481,18 @@ export function ArtistDashboard() {
                   </>
                 )}
               </div>
-            </div>
+            </CollapsiblePanel>
 
           </aside>
 
           <div className="space-y-8">
-            <div className="rounded-lg border border-glass-border bg-white/[0.035] p-5">
-              <div className="mb-5 flex items-center justify-between">
-                <h3 className="text-lg text-white">套餐价格</h3>
+            <CollapsiblePanel
+              id="pricing"
+              title="套餐价格"
+              open={!collapsedPanels.pricing}
+              onToggle={() => togglePanel('pricing')}
+            >
+              <div className="mb-5 flex items-center justify-end">
                 <button onClick={addPricingItem} className="inline-flex items-center gap-2 text-sm text-accent-blue hover:text-white">
                   <Plus className="w-4 h-4" />
                   增加套餐
@@ -484,14 +550,15 @@ export function ArtistDashboard() {
               <button onClick={savePriceList} className={`mt-5 ${actionButtonClass}`}>
                 保存套餐价格
               </button>
-            </div>
+            </CollapsiblePanel>
 
-            <div className="rounded-lg border border-glass-border bg-white/[0.035] p-5">
-              <div className="mb-4 flex items-center gap-2 text-white">
-                <ImagePlus className="w-5 h-5" />
-                <h3 className="text-lg">展示作品</h3>
-              </div>
-
+            <CollapsiblePanel
+              id="works"
+              title="展示作品"
+              icon={<ImagePlus className="h-5 w-5 text-accent-blue" />}
+              open={!collapsedPanels.works}
+              onToggle={() => togglePanel('works')}
+            >
               <div className="mb-5 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
                 <input
                   className="rounded-lg border border-glass-border bg-white/5 px-3 py-2 text-white outline-none focus:border-accent-blue/60"
@@ -544,7 +611,7 @@ export function ArtistDashboard() {
                   ))}
                 </div>
               )}
-            </div>
+            </CollapsiblePanel>
           </div>
         </div>
       </section>
