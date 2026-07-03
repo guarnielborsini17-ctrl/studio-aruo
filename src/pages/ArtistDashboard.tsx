@@ -98,8 +98,6 @@ export function ArtistDashboard() {
   const [avatarProgress, setAvatarProgress] = useState(0);
   const [works, setWorks] = useState<Work[]>([]);
   const [pricing, setPricing] = useState<PricingItem[]>([]);
-  const [workTitle, setWorkTitle] = useState('');
-  const [workDescription, setWorkDescription] = useState('');
   const [workFiles, setWorkFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadPosition, setUploadPosition] = useState({ current: 0, total: 0 });
@@ -264,8 +262,8 @@ export function ArtistDashboard() {
     try {
       const result = await uploadWorkBatch({
         files: workFiles,
-        title: workTitle,
-        description: workDescription.trim(),
+        title: '',
+        description: '',
         processImage: processWorkImage,
         uploadImage: uploadWorkImage,
         createWork,
@@ -278,8 +276,6 @@ export function ArtistDashboard() {
 
       if (result.succeeded.length > 0) {
         setWorks((items) => [...result.succeeded].reverse().concat(items));
-        setWorkTitle('');
-        setWorkDescription('');
       }
       setWorkFiles([]);
       setUploadProgress(0);
@@ -559,19 +555,7 @@ export function ArtistDashboard() {
               open={!collapsedPanels.works}
               onToggle={() => togglePanel('works')}
             >
-              <div className="mb-5 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
-                <input
-                  className="rounded-lg border border-glass-border bg-white/5 px-3 py-2 text-white outline-none focus:border-accent-blue/60"
-                  value={workTitle}
-                  onChange={(event) => setWorkTitle(event.target.value)}
-                  placeholder="作品标题"
-                />
-                <input
-                  className="rounded-lg border border-glass-border bg-white/5 px-3 py-2 text-white outline-none focus:border-accent-blue/60"
-                  value={workDescription}
-                  onChange={(event) => setWorkDescription(event.target.value)}
-                  placeholder="作品说明"
-                />
+              <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <label className="cursor-pointer rounded-lg border border-glass-border px-4 py-2 text-center text-sm text-white hover:border-accent-blue/60 hover:bg-accent-blue/10">
                   选择图片
                   <input
