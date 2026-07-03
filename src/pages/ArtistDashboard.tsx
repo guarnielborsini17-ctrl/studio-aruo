@@ -562,10 +562,21 @@ export function ArtistDashboard() {
                 ))}
               </div>
 
-              <label className="mt-5 block">
-                <span className="mb-2 block text-sm text-text-secondary">价格说明</span>
+              <button onClick={savePriceList} className={`mt-5 ${actionButtonClass}`}>
+                保存套餐价格
+              </button>
+            </CollapsiblePanel>
+
+            <CollapsiblePanel
+              id="pricing-note"
+              title="价格说明"
+              open={!collapsedPanels.pricingNote}
+              onToggle={() => togglePanel('pricingNote')}
+            >
+              <label className="block">
+                <span className="mb-2 block text-sm text-text-secondary">价格参考页面展示说明</span>
                 <textarea
-                  className="min-h-24 w-full resize-y rounded-lg border border-glass-border bg-white/5 px-3 py-2 text-white outline-none focus:border-accent-blue/60"
+                  className="min-h-44 w-full resize-y rounded-lg border border-glass-border bg-white/5 px-3 py-3 leading-7 text-white outline-none focus:border-accent-blue/60"
                   value={pricingNote}
                   onChange={(event) => setPricingNote(event.target.value)}
                   placeholder="例如：交付周期、修改次数、急单费用等"
@@ -574,7 +585,7 @@ export function ArtistDashboard() {
               </label>
 
               <button onClick={savePriceList} className={`mt-5 ${actionButtonClass}`}>
-                保存套餐价格
+                保存价格说明
               </button>
             </CollapsiblePanel>
 
