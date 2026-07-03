@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { CalendarDays, ImageIcon, Package, X } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { fetchPublicPortfolio } from "../lib/platformApi";
@@ -46,6 +46,7 @@ export function PublicPortfolio() {
     imageUrl: string;
     title: string;
   } | null>(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -70,6 +71,32 @@ export function PublicPortfolio() {
       cancelled = true;
     };
   }, [token]);
+
+  useEffect(() => {
+    const updateScrollProgress = () => {
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      setScrollProgress(maxScroll > 0 ? Math.round((window.scrollY / maxScroll) * 100) : 0);
+    };
+
+    updateScrollProgress();
+    window.addEventListener("scroll", updateScrollProgress, { passive: true });
+    window.addEventListener("resize", updateScrollProgress);
+
+    return () => {
+      window.removeEventListener("scroll", updateScrollProgress);
+      window.removeEventListener("resize", updateScrollProgress);
+    };
+  }, [portfolio]);
+
+  const handleScrollSliderChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const nextProgress = Number(event.target.value);
+    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+    setScrollProgress(nextProgress);
+    window.scrollTo({
+      top: maxScroll > 0 ? (maxScroll * nextProgress) / 100 : 0,
+      behavior: "auto",
+    });
+  };
 
   if (loading) {
     return (
@@ -99,6 +126,51 @@ export function PublicPortfolio() {
 
   return (
     <div className="min-h-screen px-6 py-10 md:px-12 lg:px-20">
+      <aside
+        aria-label="公开作品页滚动控制"
+        className="hidden lg:fixed lg:left-10 lg:top-1/2 lg:z-30 lg:block lg:-translate-y-1/2"
+      >
+        <div className="relative h-[64vh] min-h-[440px] pl-7">
+          <div
+            aria-hidden="true"
+            className="public-scroll-rail absolute left-0 top-0 h-full w-px"
+          />
+          <div
+            aria-hidden="true"
+            className="absolute left-0 top-0 w-px rounded-full bg-white/30 shadow-[0_0_16px_rgba(255,255,255,0.1)]"
+            style={{ height: `${scrollProgress}%` }}
+          />
+          <input
+            aria-label="页面滚动控制"
+            type="range"
+            min="0"
+            max="100"
+            value={scrollProgress}
+            onChange={handleScrollSliderChange}
+            className="public-scroll-slider absolute -left-3 top-0 h-full w-6 cursor-ns-resize appearance-none bg-transparent"
+            style={{ writingMode: "vertical-lr" }}
+          />
+          <div
+            aria-hidden="true"
+            className="absolute left-0 top-8 flex translate-x-0 items-center gap-4 text-xs tracking-[0.18em] text-text-secondary/75"
+          >
+            <span
+              className="h-px w-10 bg-white/18"
+            />
+            <span className="whitespace-nowrap">作品区</span>
+          </div>
+          <div
+            aria-hidden="true"
+            className="absolute bottom-8 left-0 flex translate-x-0 items-center gap-4 text-xs tracking-[0.18em] text-text-secondary/75"
+          >
+            <span
+              className="h-px w-10 bg-white/18"
+            />
+            <span className="whitespace-nowrap">收费参考</span>
+          </div>
+        </div>
+      </aside>
+
       <div className="mx-auto max-w-[1400px]">
         <header className="grid gap-8 border-b border-glass-border pb-10 md:grid-cols-[auto_1fr_auto] md:items-end">
           <div className="h-24 w-24 overflow-hidden rounded-full border border-glass-border bg-white/[0.035]">
@@ -147,7 +219,7 @@ export function PublicPortfolio() {
           </div>
         </header>
 
-        <section className="min-h-screen py-12">
+        <section id="works-section" className="scroll-mt-10 min-h-screen py-12">
           <div className="mb-7 flex items-center gap-3">
             <ImageIcon className="h-5 w-5 text-accent-blue" />
             <h2 className="text-2xl text-white">作品展示</h2>
@@ -194,7 +266,23 @@ export function PublicPortfolio() {
           )}
         </section>
 
-        <section className="flex min-h-screen flex-col justify-center border-t border-glass-border py-16">
+        <section
+          id="pricing-section"
+          className="scroll-mt-10 flex min-h-screen flex-col justify-center py-16"
+        >
+          <div className="mb-14 flex items-center gap-5">
+            <span
+              aria-hidden="true"
+              className="h-px flex-1 bg-gradient-to-r from-transparent via-glass-border to-transparent"
+            />
+            <span className="text-xs uppercase tracking-[0.35em] text-text-secondary">
+              收费参考
+            </span>
+            <span
+              aria-hidden="true"
+              className="h-px flex-1 bg-gradient-to-r from-transparent via-glass-border to-transparent"
+            />
+          </div>
           <div>
             <div className="mb-7 flex items-center gap-3">
               <Package className="h-5 w-5 text-accent-blue" />
