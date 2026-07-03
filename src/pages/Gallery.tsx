@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PageTransition } from '../components/PageTransition';
 import { WorkShowcaseCard } from '../components/WorkShowcaseCard';
+import { useAuth } from '../contexts/AuthContext';
 import { fetchWorks } from '../lib/platformApi';
 import type { Work } from '../types/platform';
 
@@ -10,6 +11,7 @@ function isDevelopmentFixture(work: Work) {
 }
 
 export function Gallery() {
+  const { user, loading: authLoading } = useAuth();
   const [works, setWorks] = useState<Work[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -17,7 +19,25 @@ export function Gallery() {
   useEffect(() => {
     let cancelled = false;
 
-    fetchWorks()
+    if (authLoading) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (!user) {
+      setWorks([]);
+      setError('');
+      setLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setLoading(true);
+    setError('');
+
+    fetchWorks(user.id)
       .then((items) => {
         if (!cancelled) {
           setWorks(items.filter((work) => !isDevelopmentFixture(work)));
@@ -33,7 +53,7 @@ export function Gallery() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [authLoading, user]);
 
   return (
     <PageTransition>
@@ -71,7 +91,7 @@ export function Gallery() {
         ) : (
           !loading && (
             <div className="rounded-lg border border-glass-border bg-white/[0.035] p-8 text-text-secondary">
-              还没有公开上传的作品。请在绘图员工作台上传作品后回到这里查看。
+              {user ? '还没有公开上传的作品。请在绘图员工作台上传作品后回到这里查看。' : '登录后可以查看你的作品库。'}
             </div>
           )
         )}
