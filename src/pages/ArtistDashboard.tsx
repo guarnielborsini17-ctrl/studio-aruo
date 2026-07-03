@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { ChevronDown, Copy, EyeOff, ImagePlus, Link2, LogOut, Plus, RefreshCw, Save, Upload } from 'lucide-react';
+import { ChevronDown, Copy, EyeOff, ImagePlus, Link2, LogOut, Plus, RefreshCw, Save, Trash2, Upload } from 'lucide-react';
 import { PageTransition } from '../components/PageTransition';
 import { WorkShowcaseCard } from '../components/WorkShowcaseCard';
 import { useAuth } from '../contexts/AuthContext';
@@ -167,8 +167,8 @@ export function ArtistDashboard() {
     }
   };
 
-  const savePriceList = async () => {
-    const validItems = pricing
+  const normalizePricingItems = (items: PricingItem[]) =>
+    items
       .map((item) => ({
         ...item,
         name: item.name.trim(),
@@ -177,8 +177,15 @@ export function ArtistDashboard() {
       }))
       .filter((item) => item.name);
 
+  const persistPricingItems = async (items: PricingItem[]) => {
+    const savedItems = await savePricing(normalizePricingItems(items));
+    setPricing(savedItems.length ? savedItems : [{ ...EMPTY_PRICING }]);
+    return savedItems;
+  };
+
+  const savePriceList = async () => {
     try {
-      setPricing(await savePricing(validItems));
+      await persistPricingItems(pricing);
       await updateProfile({ displayName, bio, avatarUrl, pricingNote });
       await refreshUser();
       setNotice('套餐价格已保存。');
@@ -211,6 +218,20 @@ export function ArtistDashboard() {
 
   const addPricingItem = () => {
     setPricing((items) => [...items, { ...EMPTY_PRICING }]);
+  };
+
+  const removePricingItem = async (index: number) => {
+    const nextItems = pricing.filter((_item, itemIndex) => itemIndex !== index);
+    const previousItems = pricing;
+    setPricing(nextItems.length ? nextItems : [{ ...EMPTY_PRICING }]);
+
+    try {
+      await persistPricingItems(nextItems);
+      setNotice('套餐已删除。');
+    } catch {
+      setPricing(previousItems);
+      setNotice('套餐删除失败。');
+    }
   };
 
   const generateShare = async () => {
@@ -497,7 +518,7 @@ export function ArtistDashboard() {
 
               <div className="space-y-3">
                 {pricing.map((item, index) => (
-                  <div key={item.id || index} className="grid gap-3 md:grid-cols-[1fr_1fr_120px_120px]">
+                  <div key={item.id || index} className="grid gap-3 md:grid-cols-[1fr_1fr_120px_120px_auto]">
                     <input
                       className="rounded-lg border border-glass-border bg-white/5 px-3 py-2 text-white outline-none focus:border-accent-blue/60"
                       value={item.name}
@@ -524,10 +545,19 @@ export function ArtistDashboard() {
                       onChange={(event) => updatePricingItem(index, { unit: event.target.value })}
                     >
                       <option value="piece">按张</option>
+                      <option value="space">按空间</option>
                       <option value="set">按套</option>
                       <option value="hour">按小时</option>
                       <option value="sqm">按平方</option>
                     </select>
+                    <button
+                      type="button"
+                      onClick={() => removePricingItem(index)}
+                      aria-label={`删除套餐 ${index + 1}`}
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-glass-border bg-white/[0.035] text-text-secondary transition-colors hover:border-accent-orange/70 hover:bg-accent-orange/10 hover:text-white"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 ))}
               </div>

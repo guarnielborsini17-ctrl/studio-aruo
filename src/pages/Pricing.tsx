@@ -35,6 +35,7 @@ function getIcon(iconType: string) {
 function unitLabel(unit: string) {
   if (unit === 'item') return '项';
   if (unit === 'piece') return '张';
+  if (unit === 'space') return '空间';
   if (unit === 'set') return '套';
   if (unit === 'hour') return '小时';
   if (unit === 'day') return '天';
@@ -122,7 +123,7 @@ export function Pricing() {
   const publicPricing = pricing as unknown as PublicPricingItem[];
   const singleItems = publicPricing.filter((item) => item.category === 'single' || !item.category);
   const packageItems = publicPricing.filter((item) => item.category === 'package');
-  const showingArtistPricing = user?.role === 'artist' && artistPricing.length > 0;
+  const isArtist = user?.role === 'artist';
 
   return (
     <PageTransition className="max-w-5xl mx-auto w-full pt-8 pb-16">
@@ -139,20 +140,29 @@ export function Pricing() {
         </div>
       </header>
 
-      {showingArtistPricing ? (
-        <section>
-          <h3 className="text-sm font-medium tracking-widest text-text-primary uppercase border-l-2 border-accent-blue pl-3 mb-5">
-            我的自定义套餐
-          </h3>
-          <div className="grid md:grid-cols-2 gap-5">
-            {artistPricing.map((item) => (
-              <CustomPriceCard key={item.id || item.name} item={item} />
-            ))}
-          </div>
-        </section>
+      {isArtist ? (
+        <>
+          {loadingArtistPricing ? (
+            <p className="mb-5 text-sm text-text-secondary">正在加载你的套餐价格...</p>
+          ) : artistPricing.length > 0 ? (
+            <section>
+              <h3 className="text-sm font-medium tracking-widest text-text-primary uppercase border-l-2 border-accent-blue pl-3 mb-5">
+                我的自定义套餐
+              </h3>
+              <div className="grid md:grid-cols-2 gap-5">
+                {artistPricing.map((item) => (
+                  <CustomPriceCard key={item.id || item.name} item={item} />
+                ))}
+              </div>
+            </section>
+          ) : (
+            <div className="rounded-lg border border-glass-border bg-white/[0.035] p-8 text-text-secondary">
+              还没有设置套餐价格。请返回工作台添加并保存套餐后再查看。
+            </div>
+          )}
+        </>
       ) : (
         <>
-          {loadingArtistPricing && <p className="mb-5 text-sm text-text-secondary">正在加载你的套餐价格...</p>}
           <section className="mb-10">
             <h3 className="text-sm font-medium tracking-widest text-text-primary uppercase border-l-2 border-accent-blue pl-3 mb-5">
               单空间表现

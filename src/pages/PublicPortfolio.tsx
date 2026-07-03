@@ -29,6 +29,7 @@ function useNoIndex() {
 function unitLabel(unit: string) {
   if (unit === "item") return "项";
   if (unit === "piece") return "张";
+  if (unit === "space") return "空间";
   if (unit === "set") return "套";
   if (unit === "hour") return "小时";
   if (unit === "sqm") return "平方米";

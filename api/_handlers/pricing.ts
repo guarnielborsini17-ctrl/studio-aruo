@@ -17,6 +17,7 @@ type PricingRow = {
 const ALLOWED_UNITS = new Set([
   'item',
   'piece',
+  'space',
   'set',
   'session',
   'hour',
