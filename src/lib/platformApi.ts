@@ -118,6 +118,7 @@ function normalizeUser(user: PlatformUser): PlatformUser {
     balance: user.balance ?? 0,
     isBusy: user.isBusy ?? true,
     availableDate: user.availableDate ?? '',
+    accountType: user.accountType ?? 'beta',
   };
 }
 

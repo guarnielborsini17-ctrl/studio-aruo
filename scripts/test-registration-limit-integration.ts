@@ -58,6 +58,7 @@ let locked = false;
 let sql: Awaited<typeof import('../api/_lib/db')>['sql'] | undefined;
 const marker = `limit-test-${randomUUID()}`;
 const usernames = [`${marker}-a`, `${marker}-b`] as const;
+const inviteCodes = [`${marker}-code-a`.toUpperCase(), `${marker}-code-b`.toUpperCase()] as const;
 
 try {
   await lockClient.connect();
@@ -75,6 +76,10 @@ try {
   const countRows = await sql`SELECT COUNT(*)::int AS registered FROM users`;
   const registered = Number(countRows[0]?.registered || 0);
   const limit = registered + 1;
+  await sql`
+    INSERT INTO invite_codes (code)
+    VALUES (${inviteCodes[0]}), (${inviteCodes[1]})
+  `;
 
   const results = await Promise.all([
     registerUserWithinLimit({
@@ -82,6 +87,7 @@ try {
       passwordHash: 'integration-only-hash',
       role: 'artist',
       displayName: 'Limit Test A',
+      inviteCode: inviteCodes[0],
       limit,
     }),
     registerUserWithinLimit({
@@ -89,6 +95,7 @@ try {
       passwordHash: 'integration-only-hash',
       role: 'artist',
       displayName: 'Limit Test B',
+      inviteCode: inviteCodes[1],
       limit,
     }),
   ]);
@@ -106,6 +113,10 @@ try {
 } finally {
   try {
     if (sql) {
+      await sql`
+        DELETE FROM invite_codes
+        WHERE code IN (${inviteCodes[0]}, ${inviteCodes[1]})
+      `;
       await sql`
         DELETE FROM users
         WHERE username IN (${usernames[0]}, ${usernames[1]})

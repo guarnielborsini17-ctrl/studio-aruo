@@ -30,6 +30,26 @@ export async function setupSchema() {
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS share_token TEXT UNIQUE`;
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS share_enabled BOOLEAN NOT NULL DEFAULT false`;
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS share_updated_at TIMESTAMPTZ`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS account_type TEXT NOT NULL DEFAULT 'beta'`;
+  await sql`
+    DO $$
+    BEGIN
+      ALTER TABLE users
+        ADD CONSTRAINT users_account_type_check
+        CHECK (account_type IN ('beta', 'permanent'));
+    EXCEPTION
+      WHEN duplicate_object THEN NULL;
+    END $$;
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS invite_codes (
+      code TEXT PRIMARY KEY,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      used_by_user_id UUID UNIQUE REFERENCES users(id) ON DELETE SET NULL,
+      used_at TIMESTAMPTZ
+    )
+  `;
 
   await sql`
     CREATE TABLE IF NOT EXISTS works (
@@ -193,6 +213,7 @@ type UserRow = {
   share_token?: string | null;
   share_enabled?: boolean | null;
   share_updated_at?: string | Date | null;
+  account_type?: 'beta' | 'permanent' | null;
   balance?: number | string | null;
   created_at?: string;
   updated_at?: string;
@@ -232,6 +253,7 @@ export function mapUser(row: UserRow) {
     balance: Number(row.balance || 0),
     isBusy: row.is_busy ?? true,
     availableDate: mapDateOnly(row.available_date),
+    accountType: row.account_type || 'beta',
     createdAt: row.created_at || '',
     updatedAt: row.updated_at || '',
   };

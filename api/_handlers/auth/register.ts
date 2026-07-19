@@ -17,6 +17,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const displayName = textValue(req.body?.displayName) || username;
   const password = rawStringValue(req.body?.password);
   const role = parseRole(req.body?.role);
+  const inviteCode = textValue(req.body?.inviteCode);
 
   if (username.length < 3) {
     sendJson(res, 400, { error: 'username_too_short' });
@@ -38,16 +39,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
+  if (!inviteCode) {
+    sendJson(res, 400, { error: 'invalid_invite_code' });
+    return;
+  }
+
   try {
     const result = await registerUserWithinLimit({
       username,
       passwordHash: hashPassword(password),
       role,
       displayName,
+      inviteCode,
     });
 
     if (result.kind === 'full') {
       sendJson(res, 409, { error: 'registration_full' });
+      return;
+    }
+    if (result.kind === 'invalid_invite_code') {
+      sendJson(res, 400, { error: 'invalid_invite_code' });
+      return;
+    }
+    if (result.kind === 'invite_code_used') {
+      sendJson(res, 409, { error: 'invite_code_used' });
       return;
     }
 

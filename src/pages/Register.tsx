@@ -10,6 +10,7 @@ export function Register() {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -62,7 +63,7 @@ export function Register() {
     setError('');
     setSubmitting(true);
     try {
-      await register({ username, displayName, password, role: 'artist' });
+      await register({ username, displayName, password, role: 'artist', inviteCode });
       navigate('/dashboard');
     } catch (err) {
       const code = err instanceof Error ? err.message : '';
@@ -75,6 +76,10 @@ export function Register() {
           remaining: 0,
           open: false,
         }));
+      } else if (code === 'invalid_invite_code') {
+        setError('申请码不正确，请检查后再试');
+      } else if (code === 'invite_code_used') {
+        setError('这个申请码已经被使用');
       } else {
         setError(code === 'username_exists' ? '这个账号已经被注册' : '注册失败，请检查信息');
       }
@@ -151,6 +156,13 @@ export function Register() {
                 value={displayName}
                 onChange={(event) => setDisplayName(event.target.value)}
                 placeholder="昵称 / 展示名"
+              />
+              <input
+                className="w-full bg-white/5 border border-glass-border rounded-lg px-4 py-3 text-white outline-none focus:border-white/60"
+                value={inviteCode}
+                onChange={(event) => setInviteCode(event.target.value)}
+                placeholder="申请码"
+                autoComplete="off"
               />
               <input
                 className="w-full bg-white/5 border border-glass-border rounded-lg px-4 py-3 text-white outline-none focus:border-white/60"

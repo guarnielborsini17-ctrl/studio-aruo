@@ -11,6 +11,7 @@
     "start": "npm run start:api",
     "backup:db": "node scripts/backup-db.mjs",
     "restore:db": "node scripts/restore-db.mjs",
+    "seed:invites": "tsx scripts/seed-invite-codes.ts",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",

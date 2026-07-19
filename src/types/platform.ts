@@ -11,6 +11,7 @@ export type PlatformUser = {
   balance?: number;
   isBusy?: boolean;
   availableDate?: string;
+  accountType?: 'beta' | 'permanent';
   createdAt?: string;
   updatedAt?: string;
 };
@@ -126,4 +127,5 @@ export type LoginInput = {
 export type RegisterInput = LoginInput & {
   displayName?: string;
   role: UserRole;
+  inviteCode: string;
 };

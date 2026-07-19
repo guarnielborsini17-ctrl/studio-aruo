@@ -14,37 +14,37 @@ try {
 
   delete process.env.BETA_USER_LIMIT;
 
-  assert.equal(getBetaUserLimit(undefined), 10);
-  assert.equal(getBetaUserLimit(''), 10);
-  assert.equal(getBetaUserLimit('abc'), 10);
-  assert.equal(getBetaUserLimit('0'), 10);
-  assert.equal(getBetaUserLimit('-2'), 10);
-  assert.equal(getBetaUserLimit('8.5'), 10);
+  assert.equal(getBetaUserLimit(undefined), 9);
+  assert.equal(getBetaUserLimit(''), 9);
+  assert.equal(getBetaUserLimit('abc'), 9);
+  assert.equal(getBetaUserLimit('0'), 9);
+  assert.equal(getBetaUserLimit('-2'), 9);
+  assert.equal(getBetaUserLimit('8.5'), 9);
   assert.equal(getBetaUserLimit('12'), 12);
 
   process.env.BETA_USER_LIMIT = '12';
   assert.equal(getBetaUserLimit(), 12);
 
-  assert.deepEqual(toRegistrationStatus(0, 10), {
-    limit: 10,
+  assert.deepEqual(toRegistrationStatus(0, 9), {
+    limit: 9,
     registered: 0,
-    remaining: 10,
+    remaining: 9,
     open: true,
   });
-  assert.deepEqual(toRegistrationStatus(9, 10), {
-    limit: 10,
-    registered: 9,
+  assert.deepEqual(toRegistrationStatus(8, 9), {
+    limit: 9,
+    registered: 8,
     remaining: 1,
     open: true,
   });
-  assert.deepEqual(toRegistrationStatus(10, 10), {
-    limit: 10,
-    registered: 10,
+  assert.deepEqual(toRegistrationStatus(9, 9), {
+    limit: 9,
+    registered: 9,
     remaining: 0,
     open: false,
   });
-  assert.deepEqual(toRegistrationStatus(13, 10), {
-    limit: 10,
+  assert.deepEqual(toRegistrationStatus(13, 9), {
+    limit: 9,
     registered: 13,
     remaining: 0,
     open: false,
@@ -59,9 +59,9 @@ try {
     Number.MAX_SAFE_INTEGER + 1,
   ]) {
     assert.deepEqual(toRegistrationStatus(3, limit), {
-      limit: 10,
+      limit: 9,
       registered: 3,
-      remaining: 7,
+      remaining: 6,
       open: true,
     });
   }
@@ -79,24 +79,24 @@ try {
     Number.NEGATIVE_INFINITY,
     Number.MAX_SAFE_INTEGER + 1,
   ]) {
-    assert.deepEqual(toRegistrationStatus(registered, 10), {
-      limit: 10,
+    assert.deepEqual(toRegistrationStatus(registered, 9), {
+      limit: 9,
       registered: 0,
-      remaining: 10,
+      remaining: 9,
       open: true,
     });
   }
 
-  assert.deepEqual(toRegistrationStatus(9.8, 10), {
-    limit: 10,
-    registered: 9,
+  assert.deepEqual(toRegistrationStatus(8.8, 9), {
+    limit: 9,
+    registered: 8,
     remaining: 1,
     open: true,
   });
-  assert.deepEqual(toRegistrationStatus(-2.4, 10), {
-    limit: 10,
+  assert.deepEqual(toRegistrationStatus(-2.4, 9), {
+    limit: 9,
     registered: 0,
-    remaining: 10,
+    remaining: 9,
     open: true,
   });
 
@@ -106,9 +106,33 @@ try {
 
   const registerSource = await readFile('api/_handlers/auth/register.ts', 'utf8');
   assert.equal(registerSource.includes('registerUserWithinLimit({'), true);
+  assert.equal(registerSource.includes('inviteCode'), true);
+  assert.equal(registerSource.includes('invalid_invite_code'), true);
+  assert.equal(registerSource.includes('invite_code_used'), true);
   assert.equal(registerSource.includes('registration_full'), true);
   assert.equal(registerSource.includes('username_exists'), true);
   assert.equal(registerSource.includes('INSERT INTO users'), false);
+
+  const dbSource = await readFile('api/_lib/db.ts', 'utf8');
+  assert.equal(dbSource.includes('account_type'), true);
+  assert.equal(dbSource.includes('invite_codes'), true);
+  assert.equal(dbSource.includes("DEFAULT 'beta'"), true);
+  assert.equal(dbSource.includes('accountType'), true);
+
+  const registrationLimitSource = await readFile(
+    'api/_lib/registrationLimit.ts',
+    'utf8',
+  );
+  assert.equal(registrationLimitSource.includes('inviteCode: string'), true);
+  assert.equal(registrationLimitSource.includes('used_by_user_id'), true);
+  assert.equal(registrationLimitSource.includes('used_at'), true);
+  assert.equal(
+    registrationLimitSource.includes('FROM invite_codes'),
+    true,
+  );
+  assert.equal(registrationLimitSource.includes('used_by_user_id IS NOT NULL'), true);
+  assert.equal(registrationLimitSource.includes('used_by_user_id IS NULL'), true);
+  assert.equal(registrationLimitSource.includes('markPermanentAccount'), true);
 
   const integrationSource = await readFile(
     'scripts/test-registration-limit-integration.ts',
@@ -180,6 +204,10 @@ try {
   );
   assert.equal(integrationSource.includes("lockClient.query('ROLLBACK')"), true);
   assert.equal(integrationSource.includes('await lockClient.end()'), true);
+  assert.equal(integrationSource.includes('inviteCodes'), true);
+  assert.equal(integrationSource.includes('inviteCode:'), true);
+  assert.equal(integrationSource.includes('INSERT INTO invite_codes'), true);
+  assert.equal(integrationSource.includes('DELETE FROM invite_codes'), true);
   assert.equal(integrationSource.includes('node:fs/promises'), false);
   assert.equal(integrationSource.includes('node:os'), false);
   assert.equal(integrationSource.includes('LOCK_PATH'), false);
@@ -203,8 +231,22 @@ try {
     platformApiSource.includes("'/api/registration-status'"),
     true,
   );
+  assert.equal(platformApiSource.includes('accountType: user.accountType'), true);
+
+  const packageSource = await readFile('package.json', 'utf8');
+  assert.equal(packageSource.includes('"seed:invites"'), true);
+
+  const seedSource = await readFile('scripts/seed-invite-codes.ts', 'utf8');
+  assert.equal(seedSource.includes('TARGET_UNUSED_CODES = 9'), true);
+  assert.equal(seedSource.includes('PERMANENT_USERNAME = \'1723670343\''), true);
+  assert.equal(seedSource.includes('markPermanentAccount(PERMANENT_USERNAME)'), true);
+  assert.equal(seedSource.includes('INSERT INTO invite_codes'), true);
 
   const registerPageSource = await readFile('src/pages/Register.tsx', 'utf8');
+  assert.equal(registerPageSource.includes('inviteCode'), true);
+  assert.equal(registerPageSource.includes('申请码'), true);
+  assert.equal(registerPageSource.includes("code === 'invalid_invite_code'"), true);
+  assert.equal(registerPageSource.includes("code === 'invite_code_used'"), true);
   assert.equal(registerPageSource.includes('首批内测剩余'), true);
   assert.equal(registerPageSource.includes('首批内测名额已满'), true);
   assert.equal(registerPageSource.includes("code === 'registration_full'"), true);
