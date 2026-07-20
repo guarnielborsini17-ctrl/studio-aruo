@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { ChevronDown, Copy, EyeOff, ImagePlus, Link2, LogOut, Plus, RefreshCw, Save, Trash2, Upload } from 'lucide-react';
 import { PageTransition } from '../components/PageTransition';
@@ -107,6 +107,7 @@ export function ArtistDashboard() {
   const [shareBusy, setShareBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const [collapsedPanels, setCollapsedPanels] = useState<Record<string, boolean>>({});
+  const workFileInputRef = useRef<HTMLInputElement>(null);
 
   const togglePanel = (panelId: string) => {
     setCollapsedPanels((panels) => ({ ...panels, [panelId]: !panels[panelId] }));
@@ -597,20 +598,26 @@ export function ArtistDashboard() {
               onToggle={() => togglePanel('works')}
             >
               <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
-                <label className="cursor-pointer rounded-lg border border-glass-border px-4 py-2 text-center text-sm text-white hover:border-accent-blue/60 hover:bg-accent-blue/10">
+                <button
+                  type="button"
+                  className="rounded-lg border border-glass-border px-4 py-2 text-center text-sm text-white hover:border-accent-blue/60 hover:bg-accent-blue/10 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={uploading}
+                  onClick={() => workFileInputRef.current?.click()}
+                >
                   选择图片
-                  <input
-                    className="hidden"
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    disabled={uploading}
-                    onChange={(event) => {
-                      setWorkFiles(Array.from(event.target.files || []));
-                      event.target.value = '';
-                    }}
-                  />
-                </label>
+                </button>
+                <input
+                  ref={workFileInputRef}
+                  className="sr-only"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  disabled={uploading}
+                  onChange={(event) => {
+                    setWorkFiles(Array.from(event.target.files || []));
+                    event.target.value = '';
+                  }}
+                />
               </div>
               <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <button onClick={uploadWork} disabled={uploading} className={actionButtonClass}>
