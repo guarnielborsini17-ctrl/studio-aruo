@@ -213,6 +213,12 @@ export async function createWork(input: {
   return data.work;
 }
 
+export async function deleteWork(id: string): Promise<void> {
+  await platformRequest<{ ok: boolean }>(`/api/works/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+}
+
 function safeFileName(fileName: string) {
   return fileName.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/-+/g, '-');
 }

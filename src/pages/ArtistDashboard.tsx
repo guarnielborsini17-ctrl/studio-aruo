@@ -6,6 +6,7 @@ import { WorkShowcaseCard } from '../components/WorkShowcaseCard';
 import { useAuth } from '../contexts/AuthContext';
 import {
   createWork,
+  deleteWork,
   disableShareLink,
   fetchPricing,
   fetchShareLink,
@@ -103,6 +104,7 @@ export function ArtistDashboard() {
   const [uploadPosition, setUploadPosition] = useState({ current: 0, total: 0 });
   const [uploadStage, setUploadStage] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [deletingWorkId, setDeletingWorkId] = useState('');
   const [share, setShare] = useState<ShareLinkState | null>(null);
   const [shareBusy, setShareBusy] = useState(false);
   const [notice, setNotice] = useState('');
@@ -314,6 +316,24 @@ export function ArtistDashboard() {
     } finally {
       setUploadStage('');
       setUploading(false);
+    }
+  };
+
+  const removeWork = async (work: Work) => {
+    if (deletingWorkId) return;
+    const confirmed = window.confirm('确定删除这个作品吗？删除后作品库和公开作品页都会同步移除。');
+    if (!confirmed) return;
+
+    setNotice('');
+    setDeletingWorkId(work.id);
+    try {
+      await deleteWork(work.id);
+      setWorks((items) => items.filter((item) => item.id !== work.id));
+      setNotice('作品已删除。');
+    } catch {
+      setNotice('删除失败，请稍后再试。');
+    } finally {
+      setDeletingWorkId('');
     }
   };
 
@@ -639,7 +659,12 @@ export function ArtistDashboard() {
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {works.map((work) => (
-                    <WorkShowcaseCard key={work.id} work={work} />
+                    <WorkShowcaseCard
+                      key={work.id}
+                      work={work}
+                      deleting={deletingWorkId === work.id}
+                      onDelete={() => removeWork(work)}
+                    />
                   ))}
                 </div>
               )}
