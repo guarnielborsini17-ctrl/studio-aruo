@@ -462,8 +462,6 @@ function Navigation() {
     { href: '/guide', label: '服务与手册', number: '03' },
     { href: '/dashboard', label: '登录 / 工作台', number: '04' },
   ];
-  const visibleLinks = isLoginPage ? links.slice(3) : links;
-
   return (
     <nav className="fixed top-0 left-0 w-full z-50 p-6 flex justify-between items-start pointer-events-none">
       <div className="flex items-center gap-6 pointer-events-auto mix-blend-difference">
@@ -486,31 +484,33 @@ function Navigation() {
         ) : null}
       </div>
 
-      <div className="flex gap-8 pointer-events-auto mix-blend-difference">
-        {visibleLinks.map((link) => {
-          const isActive = location.pathname === link.href;
-          return (
-            <Link 
-              key={link.href} 
-              to={link.href}
-              className={cn(
-                "group flex flex-col items-end gap-1 text-right transition-opacity duration-300",
-                isActive ? "opacity-100" : "opacity-40 hover:opacity-100"
-              )}
-            >
-              <span className="text-[10px] font-mono tracking-widest text-text-secondary">{link.number}</span>
-              <span className="text-xs uppercase tracking-widest font-medium text-text-primary">{link.label}</span>
-              {isActive && (
-                <motion.div 
-                  layoutId="nav-indicator"
-                  className="w-full h-[2px] bg-accent-blue mt-1"
-                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                />
-              )}
-            </Link>
-          );
-        })}
-      </div>
+      {!isLoginPage ? (
+        <div className="flex gap-8 pointer-events-auto mix-blend-difference">
+          {links.map((link) => {
+            const isActive = location.pathname === link.href;
+            return (
+              <Link
+                key={link.href}
+                to={link.href}
+                className={cn(
+                  "group flex flex-col items-end gap-1 text-right transition-opacity duration-300",
+                  isActive ? "opacity-100" : "opacity-40 hover:opacity-100"
+                )}
+              >
+                <span className="text-[10px] font-mono tracking-widest text-text-secondary">{link.number}</span>
+                <span className="text-xs uppercase tracking-widest font-medium text-text-primary">{link.label}</span>
+                {isActive && (
+                  <motion.div
+                    layoutId="nav-indicator"
+                    className="w-full h-[2px] bg-accent-blue mt-1"
+                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                  />
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      ) : null}
     </nav>
   );
 }
