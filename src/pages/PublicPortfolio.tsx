@@ -46,6 +46,7 @@ export function PublicPortfolio() {
     imageUrl: string;
     title: string;
   } | null>(null);
+  const [activeSection, setActiveSection] = useState<'works' | 'pricing'>('works');
   const [scrollProgress, setScrollProgress] = useState(0);
 
   useEffect(() => {
@@ -219,114 +220,135 @@ export function PublicPortfolio() {
           </div>
         </header>
 
-        <section id="works-section" className="scroll-mt-10 min-h-screen py-12">
-          <div className="mb-7 flex items-center gap-3">
-            <ImageIcon className="h-5 w-5 text-accent-blue" />
-            <h2 className="text-2xl text-white">作品展示</h2>
-          </div>
-
-          {works.length ? (
-            <div className="grid gap-8 md:grid-cols-2">
-              {works.map((work, index) => (
-                <article
-                  key={work.id}
-                  className={`overflow-hidden rounded-lg border border-glass-border bg-white/[0.035] ${
-                    index % 2 === 1 ? "md:mt-20" : ""
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setPreviewImage({
-                        imageUrl: work.imageUrl,
-                        title: work.title,
-                      })
-                    }
-                    className="block w-full bg-black/20 text-left"
-                    aria-label={`查看作品大图：${work.title}`}
-                  >
-                    <img
-                      src={work.imageUrl}
-                      alt={work.title}
-                      className="h-auto w-full object-contain"
-                    />
-                  </button>
-                  {work.description ? (
-                    <div className="p-5">
-                      <p className="mt-2 whitespace-pre-line text-sm leading-6 text-text-secondary">
-                        {work.description}
-                      </p>
-                    </div>
-                  ) : null}
-                </article>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-text-secondary">暂未上传作品</p>
-          )}
-        </section>
-
-        <section
-          id="pricing-section"
-          className="scroll-mt-10 flex min-h-screen flex-col justify-center py-16"
+        <nav
+          aria-label="公开作品页内容切换"
+          className="sticky top-0 z-20 -mx-6 border-b border-glass-border bg-[#08080c]/85 px-6 py-4 backdrop-blur md:static md:mx-0 md:bg-transparent md:px-0 md:py-6 md:backdrop-blur-0"
         >
-          <div className="mb-14 flex items-center gap-5">
-            <span
-              aria-hidden="true"
-              className="h-px flex-1 bg-gradient-to-r from-transparent via-glass-border to-transparent"
-            />
-            <span className="text-xs uppercase tracking-[0.35em] text-text-secondary">
-              收费参考
-            </span>
-            <span
-              aria-hidden="true"
-              className="h-px flex-1 bg-gradient-to-r from-transparent via-glass-border to-transparent"
-            />
+          <div className="grid grid-cols-2 gap-2 rounded-lg border border-glass-border bg-white/[0.035] p-1 md:inline-grid md:min-w-[360px]">
+            <button
+              type="button"
+              onClick={() => setActiveSection('works')}
+              className={`rounded-md px-4 py-2 text-sm transition-colors ${
+                activeSection === 'works'
+                  ? "bg-white text-black"
+                  : "text-text-secondary hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              作品库
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveSection('pricing')}
+              className={`rounded-md px-4 py-2 text-sm transition-colors ${
+                activeSection === 'pricing'
+                  ? "bg-white text-black"
+                  : "text-text-secondary hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              价格参考
+            </button>
           </div>
-          <div>
+        </nav>
+
+        {activeSection === 'works' ? (
+          <section id="works-section" className="scroll-mt-28 py-8 md:py-12">
             <div className="mb-7 flex items-center gap-3">
-              <Package className="h-5 w-5 text-accent-blue" />
-              <h2 className="text-2xl text-white">价格参考</h2>
+              <ImageIcon className="h-5 w-5 text-accent-blue" />
+              <h2 className="text-2xl text-white">作品展示</h2>
             </div>
 
-            {artist.pricingNote ? (
-              <p className="mb-7 max-w-3xl whitespace-pre-line text-sm leading-7 text-text-secondary">
-                {artist.pricingNote}
-              </p>
-            ) : null}
-
-            {pricing.length ? (
-              <div className="grid gap-4 md:grid-cols-2">
-                {pricing.map((item) => (
+            {works.length ? (
+              <div className="grid gap-6 md:grid-cols-2 md:gap-8">
+                {works.map((work, index) => (
                   <article
-                    key={item.id || `${item.name}-${item.sortOrder}`}
-                    className="flex items-start justify-between gap-5 rounded-lg border border-glass-border bg-white/[0.035] p-5"
+                    key={work.id}
+                    className={`overflow-hidden rounded-lg border border-glass-border bg-white/[0.035] ${
+                      index % 2 === 1 ? "md:mt-20" : ""
+                    }`}
                   >
-                    <div>
-                      <h3 className="text-lg text-white">{item.name}</h3>
-                      {item.description ? (
-                        <p className="mt-2 text-sm leading-6 text-text-secondary">
-                          {item.description}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPreviewImage({
+                          imageUrl: work.imageUrl,
+                          title: work.title,
+                        })
+                      }
+                      className="block w-full bg-black/20 text-left"
+                      aria-label={`查看作品大图：${work.title}`}
+                    >
+                      <img
+                        src={work.imageUrl}
+                        alt={work.title}
+                        className="max-h-[62vh] w-full object-contain md:max-h-none"
+                      />
+                    </button>
+                    {work.description ? (
+                      <div className="p-5">
+                        <p className="mt-2 whitespace-pre-line text-sm leading-6 text-text-secondary">
+                          {work.description}
                         </p>
-                      ) : null}
-                    </div>
-                    <p className="shrink-0 text-right text-white">
-                      <span className="text-xs text-text-secondary">¥</span>
-                      <span className="mx-1 text-2xl font-serif italic">
-                        {item.price}
-                      </span>
-                      <span className="text-xs text-text-secondary">
-                        /{unitLabel(item.unit)}
-                      </span>
-                    </p>
+                      </div>
+                    ) : null}
                   </article>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-text-secondary">暂未填写价格</p>
+              <p className="text-sm text-text-secondary">暂未上传作品</p>
             )}
-          </div>
-        </section>
+          </section>
+        ) : null}
+
+        {activeSection === 'pricing' ? (
+          <section
+            id="pricing-section"
+            className="scroll-mt-28 py-8 md:flex md:min-h-[70vh] md:flex-col md:justify-center md:py-16"
+          >
+            <div>
+              <div className="mb-7 flex items-center gap-3">
+                <Package className="h-5 w-5 text-accent-blue" />
+                <h2 className="text-2xl text-white">价格参考</h2>
+              </div>
+
+              {artist.pricingNote ? (
+                <p className="mb-7 max-w-3xl whitespace-pre-line text-sm leading-7 text-text-secondary">
+                  {artist.pricingNote}
+                </p>
+              ) : null}
+
+              {pricing.length ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {pricing.map((item) => (
+                    <article
+                      key={item.id || `${item.name}-${item.sortOrder}`}
+                      className="flex items-start justify-between gap-5 rounded-lg border border-glass-border bg-white/[0.035] p-5"
+                    >
+                      <div>
+                        <h3 className="text-lg text-white">{item.name}</h3>
+                        {item.description ? (
+                          <p className="mt-2 text-sm leading-6 text-text-secondary">
+                            {item.description}
+                          </p>
+                        ) : null}
+                      </div>
+                      <p className="shrink-0 text-right text-white">
+                        <span className="text-xs text-text-secondary">¥</span>
+                        <span className="mx-1 text-2xl font-serif italic">
+                          {item.price}
+                        </span>
+                        <span className="text-xs text-text-secondary">
+                          /{unitLabel(item.unit)}
+                        </span>
+                      </p>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-text-secondary">暂未填写价格</p>
+              )}
+            </div>
+          </section>
+        ) : null}
       </div>
 
       {previewImage ? (
