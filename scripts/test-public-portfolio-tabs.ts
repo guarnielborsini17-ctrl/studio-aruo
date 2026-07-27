@@ -10,7 +10,10 @@ assert.equal(source.includes("activeSection === 'works'"), true);
 assert.equal(source.includes("activeSection === 'pricing'"), true);
 assert.equal(source.includes('作品库'), true);
 assert.equal(source.includes('价格参考'), true);
-assert.equal(source.includes('max-h-[62vh]'), true);
+assert.equal(source.includes('max-h-[62vh]'), false);
+assert.equal(source.includes('public-work-frame'), true);
+assert.equal(source.includes('h-[56vh]'), true);
+assert.equal(source.includes('max-h-full max-w-full'), true);
 assert.equal(source.includes('object-contain'), true);
 assert.equal(source.indexOf('价格参考') < source.lastIndexOf('pricing.length'), true);
 

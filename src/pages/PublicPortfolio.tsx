@@ -277,11 +277,13 @@ export function PublicPortfolio() {
                       className="block w-full bg-black/20 text-left"
                       aria-label={`查看作品大图：${work.title}`}
                     >
-                      <img
-                        src={work.imageUrl}
-                        alt={work.title}
-                        className="max-h-[62vh] w-full object-contain md:max-h-none"
-                      />
+                      <span className="public-work-frame flex h-[56vh] max-h-[520px] min-h-[260px] w-full items-center justify-center overflow-hidden md:h-auto md:max-h-none md:min-h-0">
+                        <img
+                          src={work.imageUrl}
+                          alt={work.title}
+                          className="max-h-full max-w-full object-contain md:h-auto md:w-full md:max-w-none"
+                        />
+                      </span>
                     </button>
                     {work.description ? (
                       <div className="p-5">
