@@ -454,6 +454,7 @@ function Navigation() {
   const location = useLocation();
   const { user } = useAuth();
   const showArtistStatus = user?.role === 'artist';
+  const isLoginPage = location.pathname === '/login';
 
   const links = [
     { href: '/', label: '作品库', number: '01' },
@@ -461,6 +462,7 @@ function Navigation() {
     { href: '/guide', label: '服务与手册', number: '03' },
     { href: '/dashboard', label: '登录 / 工作台', number: '04' },
   ];
+  const visibleLinks = isLoginPage ? links.slice(3) : links;
 
   return (
     <nav className="fixed top-0 left-0 w-full z-50 p-6 flex justify-between items-start pointer-events-none">
@@ -485,7 +487,7 @@ function Navigation() {
       </div>
 
       <div className="flex gap-8 pointer-events-auto mix-blend-difference">
-        {links.map((link) => {
+        {visibleLinks.map((link) => {
           const isActive = location.pathname === link.href;
           return (
             <Link 
