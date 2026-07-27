@@ -453,8 +453,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 function Navigation() {
   const location = useLocation();
   const { user } = useAuth();
-  const showArtistStatus = user?.role === 'artist';
   const isLoginPage = location.pathname === '/login';
+  const showArtistStatus = user?.role === 'artist' && !isLoginPage;
 
   const links = [
     { href: '/', label: '作品库', number: '01' },
